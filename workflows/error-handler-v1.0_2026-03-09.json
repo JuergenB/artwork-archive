@@ -1,0 +1,403 @@
+{
+  "updatedAt": "2026-03-06T03:16:11.000Z",
+  "createdAt": "2026-03-06T03:14:25.581Z",
+  "id": "iAGcwyumKEOc83kj",
+  "name": "AA Rolling Submissions 1. — Error Handler V1.0",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "id": "aaa00001-err-trig-0001-000000000001",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const e=$input.first().json;const ex=e.execution||{};const wf=e.workflow||{};const err=ex.error||{};let cn=null;let ae=null;const rd=(ex.data||{}).resultData||{};const run=rd.runData||{};const ep=run['Notification Email Prep for Admins and Submitter'];if(ep&&ep[0]&&ep[0].data&&ep[0].data.main){const i=ep[0].data.main[0];if(i&&i[0])ae=i[0].json['Admin Notification Email Addresses']||null;}const cd=run['Search Existing Campaigns'];if(cd&&cd[0]&&cd[0].data&&cd[0].data.main){const i=cd[0].data.main[0];if(i&&i[0]){cn=i[0].json['Campaign Name']||null;if(!ae){const ce=i[0].json['Campaign Contact Emails']||null;if(ce)ae=String(ce).split(',').map(x=>x.trim()).filter(x=>x).join(', ');}}}const ca=run['Capture Artist & Campaign Data'];if(!cn&&ca&&ca[0]&&ca[0].data&&ca[0].data.main){const i=ca[0].data.main[0];if(i&&i[0])cn=i[0].json.campaign||null;}const u='https://polymash.app.n8n.cloud';const eu=ex.id?`${u}/workflow/${wf.id}/executions/${ex.id}`:u;return[{json:{workflowName:wf.name||'Unknown',workflowId:wf.id||'',executionId:ex.id||'',executionUrl:eu,errorMessage:err.message||'Unknown error',errorNode:ex.lastNodeExecuted||'Unknown',errorTimestamp:new Date().toISOString(),campaignName:cn,adminEmails:ae,hasAdminEmails:!!ae}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "id": "aaa00002-extract-0002-000000000002",
+      "name": "Extract Error Details"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.hasAdminEmails }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        300
+      ],
+      "id": "aaa00003-if-eml-0003-000000000003",
+      "name": "Admin Emails Found?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "recipientEmails",
+              "value": "={{ $json.adminEmails }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "emailSource",
+              "value": "campaign admins",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        200
+      ],
+      "id": "aaa00004-use-camp-0004-000000000004",
+      "name": "Use Campaign Emails"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.campaignName }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        400
+      ],
+      "id": "aaa00005-if-camp-0005-000000000005",
+      "name": "Campaign Name Known?"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appDFU2JdAw2Ckax4",
+          "mode": "list",
+          "cachedResultName": "AA Rolling Submissions"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblr0oR74rtvR6LN2",
+          "mode": "list",
+          "cachedResultName": "Campaigns"
+        },
+        "filterByFormula": "={{ \"{Campaign Name}=\\\"\".concat($json.campaignName).concat(\"\\\"\") }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        340
+      ],
+      "id": "aaa00006-lookup-0006-000000000006",
+      "name": "Lookup Campaign Admins",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "HOvSYV0GVGpkzhdA",
+          "name": "Airtable Personal Access Token account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const cr=$input.first().json;const ed=$('Extract Error Details').first().json;let re=null;let es='fallback';const ce=cr['Campaign Contact Emails'];if(ce){re=String(ce).split(',').map(x=>x.trim()).filter(x=>x).join(', ');es='campaign lookup';}if(!re){re='juergen@polymash.com';es='fallback (no contact emails)';}return[{json:{...ed,recipientEmails:re,emailSource:es}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        340
+      ],
+      "id": "aaa00007-resolve-0007-000000000007",
+      "name": "Resolve Emails from Lookup"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fb1",
+              "name": "recipientEmails",
+              "value": "juergen@polymash.com",
+              "type": "string"
+            },
+            {
+              "id": "fb2",
+              "name": "emailSource",
+              "value": "fallback (no campaign context)",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        500
+      ],
+      "id": "aaa00008-fallback-0008-000000000008",
+      "name": "Use Fallback Email"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d=$input.first().json;\nconst subject=`\\u26a0\\ufe0f Workflow Error: ${d.workflowName} \\u2014 ${d.errorNode}`;\nconst body=`<div style=\"font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;max-width:600px;margin:0 auto\"><div style=\"background:#dc3545;color:#fff;padding:20px;border-radius:8px 8px 0 0\"><h2 style=\"margin:0\">\\u26a0\\ufe0f Workflow Error Alert</h2><p style=\"margin:5px 0 0;opacity:.9\">${d.workflowName}</p></div><div style=\"background:#fff;border:1px solid #ddd;border-top:none;padding:20px;border-radius:0 0 8px 8px\"><table style=\"width:100%;border-collapse:collapse\"><tr><td style=\"padding:8px 0;color:#666;width:140px\">Failed Node:</td><td style=\"padding:8px 0;font-weight:600\">${d.errorNode}</td></tr><tr><td style=\"padding:8px 0;color:#666\">Error:</td><td style=\"padding:8px 0;color:#dc3545\">${d.errorMessage}</td></tr><tr><td style=\"padding:8px 0;color:#666\">Execution ID:</td><td style=\"padding:8px 0\">${d.executionId}</td></tr><tr><td style=\"padding:8px 0;color:#666\">Timestamp:</td><td style=\"padding:8px 0\">${d.errorTimestamp}</td></tr><tr><td style=\"padding:8px 0;color:#666\">Campaign:</td><td style=\"padding:8px 0\">${d.campaignName||'N/A'}</td></tr><tr><td style=\"padding:8px 0;color:#666\">Email Source:</td><td style=\"padding:8px 0;font-style:italic\">${d.emailSource}</td></tr></table><div style=\"margin-top:20px;text-align:center\"><a href=\"${d.executionUrl}\" style=\"display:inline-block;background:#dc3545;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600\">View Failed Execution</a></div></div><p style=\"text-align:center;color:#999;font-size:12px;margin-top:15px\">Sent by AA Rolling Submissions Error Handler</p></div>`;\nreturn[{json:{...d,emailSubject:subject,emailBody:body}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        300
+      ],
+      "id": "aaa00009-format-0009-000000000009",
+      "name": "Format Error Email"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.recipientEmails }}",
+        "subject": "={{ $json.emailSubject }}",
+        "message": "={{ $json.emailBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1540,
+        300
+      ],
+      "id": "aaa00010-send-0010-000000000010",
+      "name": "Send Error Notification",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "xh1ZWlUuCtrojk5F",
+          "name": "Gmail account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Error Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Error Details": {
+      "main": [
+        [
+          {
+            "node": "Admin Emails Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Admin Emails Found?": {
+      "main": [
+        [
+          {
+            "node": "Use Campaign Emails",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Campaign Name Known?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Campaign Emails": {
+      "main": [
+        [
+          {
+            "node": "Format Error Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campaign Name Known?": {
+      "main": [
+        [
+          {
+            "node": "Lookup Campaign Admins",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Use Fallback Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Campaign Admins": {
+      "main": [
+        [
+          {
+            "node": "Resolve Emails from Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Emails from Lookup": {
+      "main": [
+        [
+          {
+            "node": "Format Error Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Fallback Email": {
+      "main": [
+        [
+          {
+            "node": "Format Error Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error Email": {
+      "main": [
+        [
+          {
+            "node": "Send Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "fec0cd7c-f3a3-404e-bc95-ab0bf20a7d12",
+  "activeVersionId": null,
+  "versionCounter": 2,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-06T03:16:11.419Z",
+      "createdAt": "2026-03-06T03:16:11.419Z",
+      "role": "workflow:owner",
+      "workflowId": "iAGcwyumKEOc83kj",
+      "projectId": "JGYn5ywz4orUHX0d",
+      "project": {
+        "updatedAt": "2025-09-03T13:30:05.000Z",
+        "createdAt": "2025-08-20T16:34:39.654Z",
+        "id": "JGYn5ywz4orUHX0d",
+        "name": "MCP Automation Development",
+        "type": "team",
+        "icon": {
+          "type": "icon",
+          "value": "layers"
+        },
+        "description": "Various internal and client development projects",
+        "creatorId": null
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}

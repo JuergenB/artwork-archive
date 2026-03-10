@@ -1,0 +1,8 @@
+.env
+.env.local
+.env.*
+node_modules/
+.DS_Store
+
+# Large data exports (contact CSVs, ~28MB)
+docs/knowledge/feature-existing-artist-check/

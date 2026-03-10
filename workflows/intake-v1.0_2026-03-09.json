@@ -1,0 +1,3889 @@
+{
+  "updatedAt": "2026-03-06T04:39:07.774Z",
+  "createdAt": "2026-03-06T03:18:25.001Z",
+  "id": "QtP1J9Fwr5SPRG0u",
+  "name": "AA Rolling Submissions 1. — Intake V1.0",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "9cedcdaa-b475-436d-a44b-33d73a3d88ca",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -48,
+        0
+      ],
+      "id": "fcf57bc4-cfdd-4740-b160-6916c51a3d80",
+      "name": "Webhook",
+      "webhookId": "9cedcdaa-b475-436d-a44b-33d73a3d88ca"
+    },
+    {
+      "parameters": {
+        "jsCode": "const formData = $('Webhook').first().json.body.data;\nconst fieldMap = {};\nformData.forEach(field => { if (field.custom_key) { fieldMap[field.custom_key] = field.value; } });\nconst artworkFields = ['url','title','description','type','year_created','medium','subject','purchase_url'];\nconst artworks = [];\nfor (let i = 1; i <= 5; i++) {\n  const prefix = `artwork${i}`;\n  if (fieldMap[`${prefix}_title`] || fieldMap[`${prefix}_url`]) {\n    const artwork = { artwork_number: i };\n    artworkFields.forEach(field => {\n      const value = fieldMap[`${prefix}_${field}`];\n      if (field === 'url' && value && typeof value === 'object') {\n        artwork.image_url = value.url; artwork.image_filename = value.name; artwork.image_size = value.size; artwork.image_width = value.width; artwork.image_height = value.height;\n      } else { artwork[field] = value || null; }\n    });\n    artworks.push(artwork);\n  }\n}\nreturn { artwork_count: artworks.length, artworks, artist: { first_name: fieldMap.first_name, last_name: fieldMap.last_name, email: fieldMap.email, bio: fieldMap.bio } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        0
+      ],
+      "id": "5e2489e7-ca26-426e-ab99-b4e493ccf46d",
+      "name": "Detect Artworks"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "artworks",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        0
+      ],
+      "id": "9c29cd2f-a0a9-40b8-97c2-25bd73aa17ed",
+      "name": "Split Out Artworks"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appDFU2JdAw2Ckax4",
+          "mode": "list",
+          "cachedResultName": "AA Rolling Submissions"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblZZS5EeWmxmyCTB",
+          "mode": "list",
+          "cachedResultName": "Artists"
+        },
+        "filterByFormula": "={{ \"{Email}=\\\"\".concat($('Capture Artist & Campaign Data').item.json.email).concat(\"\\\"\") }}",
+        "returnAll": false,
+        "limit": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1072,
+        0
+      ],
+      "id": "4407c5be-07f4-4944-8a19-bb0da39adb18",
+      "name": "Search For Existing Artists",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "HOvSYV0GVGpkzhdA",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appDFU2JdAw2Ckax4",
+          "mode": "list",
+          "cachedResultName": "AA Rolling Submissions"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblZZS5EeWmxmyCTB",
+          "mode": "list",
+          "cachedResultName": "Artists"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "First Name": "={{ $('Capture Artist & Campaign Data').item.json['First Name'] }}",
+            "Last Name": "={{ $('Capture Artist & Campaign Data').item.json['Last Name'] }}",
+            "Email": "={{ $('Capture Artist & Campaign Data').item.json.email }}",
+            "Bio": "={{ $('Capture Artist & Campaign Data').item.json.bio }}",
+            "Artist Statement": "={{ $('Capture Artist & Campaign Data').item.json.artist_statement }}",
+            "Contact Image URL": "={{ $('Capture Artist & Campaign Data').item.json.headshot_url }}",
+            "Primary Address": "={{ $('Capture Artist & Campaign Data').item.json.address_street }}",
+            "City": "={{ $('Capture Artist & Campaign Data').item.json.address_suburb }}",
+            "State": "={{ $('Capture Artist & Campaign Data').item.json.address_state }}",
+            "Address 2": "={{ $('Capture Artist & Campaign Data').item.json.address_subpremise }}",
+            "Country": "={{ $('Capture Artist & Campaign Data').item.json.address_country }}",
+            "Website": "={{ $('Capture Artist & Campaign Data').item.json.website_url }}",
+            "Instagram URL": "={{ $('Capture Artist & Campaign Data').item.json.instagram_url }}",
+            "Facebook URL": "={{ $('Capture Artist & Campaign Data').item.json.facebook_url }}",
+            "Twitter URL": "={{ $('Capture Artist & Campaign Data').item.json.twitter_url }}",
+            "LinkedIn URL": "={{ $('Capture Artist & Campaign Data').item.json.linkedin_url }}",
+            "Pinterest URL": "={{ $('Capture Artist & Campaign Data').item.json.pinterest_url }}",
+            "Submission ID (Paperform)": "={{ $('Capture Artist & Campaign Data').item.json.submission_id }}",
+            "Date Imported": "={{ $('Capture Artist & Campaign Data').item.json.date_imported }}",
+            "id": "={{ $('Search For Existing Artists').item.json.id }}",
+            "Contact Thumbnail": "={{ [{\"url\": $('Capture Artist & Campaign Data').item.json.headshot_url }] }}",
+            "Campaigns": "={{ [$('Create or update Campaign').item.json.id] }}",
+            "Zip": "={{ $('Capture Artist & Campaign Data').item.json.address_postcode }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1296,
+        0
+      ],
+      "id": "a53f4895-5437-4ccd-82db-66867232acd2",
+      "name": "Create or update Artist record",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "HOvSYV0GVGpkzhdA",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "id",
+              "renameField": true,
+              "outputFieldName": "artwork_import_ids"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        0
+      ],
+      "id": "c5c1f1ba-3b2e-40e3-9288-2d69ff3ebf1c",
+      "name": "Aggregate Success IDs"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "submission_id",
+              "value": "={{ $('Webhook').item.json.body.submission_id }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "body.created_at",
+              "value": "={{ $('Webhook').item.json.body.created_at }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "artwork_count",
+              "value": "={{ $('Detect Artworks').item.json.artwork_count }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "artist.first_name",
+              "value": "={{ $('Capture Artist & Campaign Data').item.json['First Name'] }}",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "artist.last_name",
+              "value": "={{ $('Capture Artist & Campaign Data').item.json['Last Name'] }}",
+              "type": "string"
+            },
+            {
+              "id": "a6",
+              "name": "artist.email",
+              "value": "={{ $('Capture Artist & Campaign Data').item.json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "a7",
+              "name": "artwork_import_ids",
+              "value": "={{ $json.artwork_import_ids }}",
+              "type": "array"
+            },
+            {
+              "id": "a8",
+              "name": "artist_id",
+              "value": "={{ $('Create or update Artist record').item.json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        304
+      ],
+      "id": "a347c830-0ae0-4d72-bfcf-884eb6ab91fe",
+      "name": "Prepare Submission Log Data"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appDFU2JdAw2Ckax4",
+          "mode": "list",
+          "cachedResultName": "AA Rolling Submissions"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblRRwlDM1M6j0ifz",
+          "mode": "list",
+          "cachedResultName": "Import Logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Import ID": "={{ $json.submission_id }}",
+            "Timestamp": "={{ $json.body.created_at }}",
+            "Artist First Name": "={{ $json.artist.first_name }}",
+            "Artist Last Name": "={{ $json.artist.last_name }}",
+            "Artist Email": "={{ $json.artist.email }}",
+            "Number of Artworks Imported": "={{ $json.artwork_count }}",
+            "Artwork IDs Imported": "={{ $json.artwork_import_ids }}",
+            "Import Status": "SUCCESS",
+            "Campaign Name": "={{ $('Capture Artist & Campaign Data').item.json.campaign }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Import ID",
+              "displayName": "Import ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        432,
+        304
+      ],
+      "id": "f9199bd5-bd6c-4819-8675-a5259221c242",
+      "name": "Update Import Log",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "HOvSYV0GVGpkzhdA",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appDFU2JdAw2Ckax4",
+          "mode": "list",
+          "cachedResultName": "AA Rolling Submissions"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblh3npWVZgkWSILm",
+          "mode": "list",
+          "cachedResultName": "Artworks"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Artist": "={{ [ $('Create or update Artist record').item.json.id ] }}",
+            "Artist Email": "={{ $('Create or update Artist record').item.json.fields.Email }}",
+            "Piece Name": "={{ $('Split Out Artworks').item.json.title }}",
+            "Type": "={{ $('Split Out Artworks').item.json.type }}",
+            "Medium": "={{ $('Split Out Artworks').item.json.medium }}",
+            "Subject Matter": "={{ $('Split Out Artworks').item.json.subject }}",
+            "Description": "={{ $('Split Out Artworks').item.json.description }}",
+            "Link to Purchase URL": "={{ $('Split Out Artworks').item.json.purchase_url }}",
+            "Piece Image URLs": "={{ $('Split Out Artworks').item.json.image_url }}",
+            "Year Created Date": "={{ $('Split Out Artworks').item.json.year_created }}",
+            "Status": "Pending - Imported",
+            "Date Imported": "={{ $('Webhook').item.json.body.created_at }}",
+            "Piece Thumbnail": "={{ [ { \"url\": $('Split Out Artworks').item.json.image_url } ] }}",
+            "Collections": "={{ $('Capture Artist & Campaign Data').item.json.campaign }}",
+            "Related Campaign": "={{ $('Capture Artist & Campaign Data').item.json.campaign }}",
+            "Campaign (Linked by Name)": "={{ [$('Create or update Campaign').item.json.id] }}",
+            "Height": 0,
+            "Width": 0,
+            "Depth": 0
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true
+            }
+          ]
+        },
+        "options": {
+          "typecast": false
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2016,
+        0
+      ],
+      "id": "29ed93fa-a459-458d-9330-1e5d581b69bf",
+      "name": "Create or update Artworks",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "HOvSYV0GVGpkzhdA",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appDFU2JdAw2Ckax4",
+          "mode": "list",
+          "cachedResultName": "AA Rolling Submissions"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblZZS5EeWmxmyCTB",
+          "mode": "list",
+          "cachedResultName": "Artists"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Prepare Submission Log Data').item.json.artist_id }}",
+            "Status": "Pending - Imported"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        912,
+        288
+      ],
+      "id": "319b9a78-7757-4686-b4a7-b79a7df8776e",
+      "name": "Update Artist Status to Pending",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "HOvSYV0GVGpkzhdA",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $('Update Import Log').item.json.fields['Import Status'] }}",
+              "rightValue": "SUCCESS",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        640,
+        304
+      ],
+      "id": "748da73c-d907-47ef-a9ff-ccde3b8d699b",
+      "name": "Success?"
+    },
+    {
+      "parameters": {
+        "content": "## V1.0 Hardened — Process Campaigns and Artists",
+        "height": 272,
+        "width": 1312,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        176,
+        -64
+      ],
+      "typeVersion": 1,
+      "id": "8acbe6ac-11c6-4997-b892-c39edb6eb857",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Process Artworks",
+        "height": 272,
+        "width": 848,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1520,
+        -64
+      ],
+      "typeVersion": 1,
+      "id": "ce910c54-8e88-4b84-919e-926ab6bee63e",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1",
+              "name": "=First Name",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.first_name.value }}",
+              "type": "string"
+            },
+            {
+              "id": "b2",
+              "name": "Last Name",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.last_name.value }}",
+              "type": "string"
+            },
+            {
+              "id": "b3",
+              "name": "email",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.email.value }}",
+              "type": "string"
+            },
+            {
+              "id": "b4",
+              "name": "phone",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.phone.value }}",
+              "type": "string"
+            },
+            {
+              "id": "b5",
+              "name": "mailing_address",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.mailing_address.value }}",
+              "type": "string"
+            },
+            {
+              "id": "b6",
+              "name": "address_subpremise",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_subpremise'].value }}",
+              "type": "string"
+            },
+            {
+              "id": "b7",
+              "name": "address_streetNumber",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_streetNumber'].value }}",
+              "type": "string"
+            },
+            {
+              "id": "b8",
+              "name": "address_street",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_street'].value }}",
+              "type": "string"
+            },
+            {
+              "id": "b9",
+              "name": "address_suburb",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_suburb'].value }}",
+              "type": "string"
+            },
+            {
+              "id": "b10",
+              "name": "address_state",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_state'].value }}",
+              "type": "string"
+            },
+            {
+              "id": "b11",
+              "name": "address_postcode",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_postcode'].value }}",
+              "type": "string"
+            },
+            {
+              "id": "b12",
+              "name": "address_country",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_country'].value }}",
+              "type": "string"
+            },
+            {
+              "id": "b13",
+              "name": "headshot_url",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.headshot_url.value[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "b14",
+              "name": "bio",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.bio.value }}",
+              "type": "string"
+            },
+            {
+              "id": "b15",
+              "name": "artist_statement",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.artist_statement.value }}",
+              "type": "string"
+            },
+            {
+              "id": "b16",
+              "name": "website_url",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.website_url.value }}",
+              "type": "string"
+            },
+            {
+              "id": "b17",
+              "name": "instagram_url",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.instagram_url.value }}",
+              "type": "string"
+            },
+            {
+              "id": "b18",
+              "name": "facebook_url",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.facebook_url.value }}",
+              "type": "string"
+            },
+            {
+              "id": "b19",
+              "name": "twitter_url",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.twitter_url.value }}",
+              "type": "string"
+            },
+            {
+              "id": "b20",
+              "name": "linkedin_url",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.linkedin_url.value }}",
+              "type": "string"
+            },
+            {
+              "id": "b21",
+              "name": "pinterest_url",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.pinterest_url.value }}",
+              "type": "string"
+            },
+            {
+              "id": "b22",
+              "name": "date_imported",
+              "value": "={{ $('Normalize Fields by Key').item.json.created_at }}",
+              "type": "string"
+            },
+            {
+              "id": "b23",
+              "name": "submission_id",
+              "value": "={{ $('Normalize Fields by Key').item.json.submission_id }}",
+              "type": "string"
+            },
+            {
+              "id": "b24",
+              "name": "campaign",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.campaign.value }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        432,
+        0
+      ],
+      "id": "0b471c8b-b51c-441a-afa0-83a455719e8f",
+      "name": "Capture Artist & Campaign Data"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appDFU2JdAw2Ckax4",
+          "mode": "list",
+          "cachedResultName": "AA Rolling Submissions"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblr0oR74rtvR6LN2",
+          "mode": "list",
+          "cachedResultName": "Campaigns"
+        },
+        "filterByFormula": "={{ \"{Campaign Name}=\\\"\".concat($json.campaign).concat(\"\\\"\") }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        640,
+        0
+      ],
+      "id": "bd91294c-2704-4580-8d64-00e623c9d15e",
+      "name": "Search Existing Campaigns",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "HOvSYV0GVGpkzhdA",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appDFU2JdAw2Ckax4",
+          "mode": "list",
+          "cachedResultName": "AA Rolling Submissions"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblr0oR74rtvR6LN2",
+          "mode": "list",
+          "cachedResultName": "Campaigns"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "Campaign Name": "={{ $json['Campaign Name'] }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        848,
+        0
+      ],
+      "id": "e4a26454-1cf6-4f8b-a858-78f614650d9b",
+      "name": "Create or update Campaign",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "HOvSYV0GVGpkzhdA",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Prepare Logs and Comms",
+        "height": 416,
+        "width": 944,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        176,
+        224
+      ],
+      "typeVersion": 1,
+      "id": "2b70e296-d677-483e-913a-5f3f156c5757",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item=items[0];const body=item.json.body||{};const dataArray=body.data||[];const fieldsByKey={};const fieldsList=[];function normalizeValue(f){const v=f.value;if(v===null||v===undefined)return null;if(Array.isArray(v)){const urls=v.map(x=>(x&&typeof x==='object'?x.url:null)).filter(Boolean);return urls.length>0?urls:v;}if(typeof v==='object'){if(v.url)return v.url;return v;}return v;}for(const field of dataArray){if(!field)continue;const title=field.title||'';const type=field.type||'';const customKey=field.custom_key||null;const key=field.key||null;const identifier=customKey||key;const normalizedValue=normalizeValue(field);const fieldEntry={title,key,custom_key:customKey,type,value:normalizedValue,raw:field};if(identifier){fieldsByKey[identifier]=fieldEntry;}fieldsList.push({title,key,custom_key:customKey,type,value:normalizedValue});}return[{json:{form_id:body.form_id,slug:body.slug,submission_id:body.submission_id,created_at:body.created_at,fieldsByKey,fieldsList,device:body.device,charge:body.charge,pdfs:body.pdfs}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "ed47cfb3-6070-4294-8055-5ebe7839fea3",
+      "name": "Normalize Fields by Key"
+    },
+    {
+      "parameters": {
+        "content": "## Send Emails",
+        "height": 416,
+        "width": 1216,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1152,
+        224
+      ],
+      "typeVersion": 1,
+      "id": "dcc2bd42-3159-4352-bc12-bbc5d20ada84",
+      "name": "Get Campaign Email Info"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "base": {
+          "__rl": true,
+          "value": "appDFU2JdAw2Ckax4",
+          "mode": "list",
+          "cachedResultName": "AA Rolling Submissions"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblr0oR74rtvR6LN2",
+          "mode": "list",
+          "cachedResultName": "Campaigns"
+        },
+        "id": "={{ $('Create or update Campaign').item.json.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1312,
+        288
+      ],
+      "id": "f089b891-656c-48ec-9b70-03cc9cdf6144",
+      "name": "Get Campaign Email Info2",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "HOvSYV0GVGpkzhdA",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1",
+              "name": "Admin Notification Email Addresses",
+              "value": "={{ $json['Campaign Contact Emails'] ? $json['Campaign Contact Emails'].split(',').map(e => e.trim()).filter(e => e !== '').join(', ') : '' }}",
+              "type": "string"
+            },
+            {
+              "id": "e2",
+              "name": "Admin Notification Subject",
+              "value": "={{ $json['Admin Notification Subject'].replace('[[campaign_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.campaign.value || '').replace('[[artist_first_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.first_name.value || '').replace('[[artist_last_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.last_name.value || '') }}",
+              "type": "string"
+            },
+            {
+              "id": "e3",
+              "name": "Admin Notification Body",
+              "value": "={{ $json['Admin Notification Body'].replaceAll('[[campaign_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.campaign.value || '').replaceAll('[[artist_first_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.first_name.value || '').replaceAll('[[artist_last_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.last_name.value || '') }}",
+              "type": "string"
+            },
+            {
+              "id": "e4",
+              "name": "Submitter Email Address",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.email.value }}",
+              "type": "string"
+            },
+            {
+              "id": "e5",
+              "name": "Submitter Thank You Subject",
+              "value": "={{ $json['Submitter Thank You Subject'].replace('[[campaign_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.campaign.value || '') }}",
+              "type": "string"
+            },
+            {
+              "id": "e6",
+              "name": "Submitter Thank You Body",
+              "value": "={{ $json['Submitter Thank You Body'].replaceAll('[[campaign_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.campaign.value || '') }}",
+              "type": "string"
+            },
+            {
+              "id": "e7",
+              "name": "Campaign Logo Small",
+              "value": "={{ $json['Campaign Logo'][0].thumbnails.small.url }}",
+              "type": "string"
+            },
+            {
+              "id": "e8",
+              "name": "Campaign Logo Medium",
+              "value": "={{ $json['Campaign Logo'][0].thumbnails.large.url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1536,
+        288
+      ],
+      "id": "bf4d2628-442c-474a-8fde-0232b91ab0f7",
+      "name": "Notification Email Prep for Admins and Submitter"
+    },
+    {
+      "parameters": {
+        "content": "## V1.0 Hardened",
+        "height": 1072,
+        "width": 304
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -160,
+        224
+      ],
+      "typeVersion": 1,
+      "id": "dde39deb-afc3-4cc9-8780-3fa3af53d04d",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert email designer.\n\nLogo URL: {{ $json['Campaign Logo Medium'] }}\n\nSubject: {{ $json['Admin Notification Subject'] }}\n\nBody:\n{{ $json['Admin Notification Body'] }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1760,
+        288
+      ],
+      "id": "1af4c1c1-6ced-4767-9ca0-59d51e9656f2",
+      "name": "AI Email Beautifier",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1728,
+        512
+      ],
+      "id": "f72db3cb-2cd2-4a88-9f46-5ccd7556d300",
+      "name": "OpenAI GPT-4o",
+      "credentials": {
+        "openAiApi": {
+          "id": "UFKlS8KRGWM7HW7J",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"admin_html\": \"<html>...</html>\",\n  \"brand_colors\": {\"primary\": \"#0066CC\"}\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1936,
+        512
+      ],
+      "id": "7751a43d-bafc-4779-9f8c-b1170cb69908",
+      "name": "Email HTML Parser"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Notification Email Prep for Admins and Submitter').item.json['Admin Notification Email Addresses'] }}",
+        "subject": "={{ $('Notification Email Prep for Admins and Submitter').item.json['Admin Notification Subject'] }}",
+        "message": "={{ $json.output.admin_html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2080,
+        288
+      ],
+      "id": "577d1219-c57a-4028-94c9-9501c4a9676e",
+      "name": "Send Admin Notification",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "webhookId": "f5c484f8-4b0b-4e32-8430-e81aca343964",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "xh1ZWlUuCtrojk5F",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "email": "={{ $json['Email Address'] }}",
+        "updateIfExists": true,
+        "additionalFields": {
+          "fieldValues": {
+            "property": [
+              {
+                "field": "9",
+                "value": "={{ $json['Mailing Address'] }}"
+              },
+              {
+                "field": "4",
+                "value": "={{ $json['Street Address'] }}"
+              },
+              {
+                "field": "5",
+                "value": "={{ $json.City }}"
+              },
+              {
+                "field": "6",
+                "value": "={{ $json.State }}"
+              },
+              {
+                "field": "7",
+                "value": "={{ $json['Zip Code'] }}"
+              },
+              {
+                "field": "15",
+                "value": "={{ $json.Country }}"
+              },
+              {
+                "field": "8",
+                "value": "={{ $json['Primary Website'] }}"
+              },
+              {
+                "field": "10",
+                "value": "={{ $json['Instagram URL'] }}"
+              },
+              {
+                "field": "12",
+                "value": "={{ $json['Facebook URL'] }}"
+              },
+              {
+                "field": "11",
+                "value": "={{ $json['Twitter URL'] }}"
+              },
+              {
+                "field": "57",
+                "value": "={{ $json['Linkedin URL'] }}"
+              }
+            ]
+          },
+          "firstName": "={{ $json['First Name'] }}",
+          "lastName": "={{ $json['Last Name'] }}",
+          "phone": "={{ $json.Phone }}"
+        }
+      },
+      "type": "n8n-nodes-base.activeCampaign",
+      "typeVersion": 1,
+      "position": [
+        416,
+        768
+      ],
+      "id": "ce907346-094f-4dd2-a198-3a537f786440",
+      "name": "Create a contact",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "activeCampaignApi": {
+          "id": "6hku5zrCPrTu3XHc",
+          "name": "ActiveCampaign Crewest Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Add To Active Campaign",
+        "height": 624,
+        "width": 2180,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        176,
+        672
+      ],
+      "typeVersion": 1,
+      "id": "2bb4ad3a-2d60-4c2a-9363-9c94643c4589",
+      "name": "Get Campaign Email Info1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "p1",
+              "name": "First Name",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.first_name.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p2",
+              "name": "Last Name",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.last_name.raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p3",
+              "name": "Email Address",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.email.raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p4",
+              "name": "Campaign Name",
+              "value": "={{ $('Search Existing Campaigns').item.json['Campaign Name'] }}",
+              "type": "string"
+            },
+            {
+              "id": "p5",
+              "name": "Active Campaign Lists",
+              "value": "={{ $('Search Existing Campaigns').item.json['Active Campaign Lists'] }}",
+              "type": "array"
+            },
+            {
+              "id": "p6",
+              "name": "Active Campaign Tags",
+              "value": "={{ $('Search Existing Campaigns').item.json['Active Campaign Tags'] }}",
+              "type": "string"
+            },
+            {
+              "id": "p7",
+              "name": "Phone",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.phone.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p8",
+              "name": "Mailing Address",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.mailing_address.raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p9",
+              "name": "Street Address",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_street'].raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p10",
+              "name": "City",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_suburb'].raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p11",
+              "name": "State",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_state'].raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p12",
+              "name": "Zip Code",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_postcode'].raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p13",
+              "name": "Country",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_country'].raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p14",
+              "name": "Bio",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.bio.raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p15",
+              "name": "Artist Statement",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.artist_statement.raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p16",
+              "name": "Primary Website",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.website_url.raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p17",
+              "name": "Instagram URL",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.instagram_url.raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p18",
+              "name": "Facebook URL",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.facebook_url.raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p19",
+              "name": "Twitter URL",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.twitter_url.raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p20",
+              "name": "Linkedin URL",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.linkedin_url.raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p21",
+              "name": "Pinterest URL",
+              "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.pinterest_url.raw.value }}",
+              "type": "string"
+            },
+            {
+              "id": "p22",
+              "name": "Active Campaign Lists To Add To",
+              "value": "={{ $('Search Existing Campaigns').item.json['Active Campaign Lists'] }}",
+              "type": "array"
+            },
+            {
+              "id": "p23",
+              "name": "Active Campaign Tags To Add",
+              "value": "={{ $('Search Existing Campaigns').item.json['Active Campaign Tags'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        768
+      ],
+      "id": "988c4a8b-04e4-4d4c-be36-a26b5b4d27b4",
+      "name": "Prep Active Campaign"
+    },
+    {
+      "parameters": {
+        "jsCode": "const contactItem=$input.first().json;const contactId=contactItem.id;const prepJson=$node['Prep Active Campaign'].json;let lists=prepJson['Active Campaign Lists To Add To']||prepJson['Active Campaign Lists']||[];if(!Array.isArray(lists)){lists=[];}const items=lists.map(str=>{const match=String(str).match(/ListID=(\\d+)/);return match?match[1]:null;}).filter(id=>id!==null).map(listId=>({json:{contactId,listId}}));return items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        768
+      ],
+      "id": "94558b3f-9b13-4ec4-88c9-5131eec70273",
+      "name": "Extract AC List IDs To Add To"
+    },
+    {
+      "parameters": {
+        "resource": "contactList",
+        "listId": "={{ $json.listId }}",
+        "contactId": "={{ $json.contactId }}"
+      },
+      "type": "n8n-nodes-base.activeCampaign",
+      "typeVersion": 1,
+      "position": [
+        848,
+        768
+      ],
+      "id": "66eeda89-cd10-44ef-a5f7-bd3ce7c7f019",
+      "name": "Add a contact to lists",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "activeCampaignApi": {
+          "id": "6hku5zrCPrTu3XHc",
+          "name": "ActiveCampaign Crewest Account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        768
+      ],
+      "id": "116d525e-c245-4ec6-add8-7ed7e58aab27",
+      "name": "Aggregate",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepJson=$node['Prep Active Campaign'].json;const tagString=prepJson['Active Campaign Tags To Add']||'';const tags=String(tagString).split(',').map(t=>t.trim()).filter(t=>t.length>0);return tags.map(tag=>({json:{tag}}));"
+      },
+      "id": "7225c4a5-a619-4a43-9fb3-8604047d9842",
+      "name": "Extract Tags to Add to AC1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        1008
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "tag",
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.activeCampaign",
+      "typeVersion": 1,
+      "position": [
+        432,
+        1008
+      ],
+      "id": "1e95013e-88e2-4ab8-8b85-b73a4c5e6f9f",
+      "name": "Get All AC Tags",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "activeCampaignApi": {
+          "id": "6hku5zrCPrTu3XHc",
+          "name": "ActiveCampaign Crewest Account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepJson=$node['Prep Active Campaign'].json;const tagString=prepJson['Active Campaign Tags To Add']||'';const desiredTags=String(tagString).split(',').map(t=>t.trim()).filter(t=>t.length>0);const contactData=$node['Create a contact'].json;const contactId=contactData.contact?.id||contactData.id;const allACTags=$('Get All AC Tags').all().map(item=>item.json);return desiredTags.map(tagName=>{const match=allACTags.find(t=>(t.tag||t.name||'').toLowerCase()===tagName.toLowerCase());return{json:{tagName,tagId:match?(match.id||null):null,needsCreation:!match,contactId:String(contactId)}};});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        1008
+      ],
+      "id": "e779ddfe-844d-43f0-a0ca-c45eb5397364",
+      "name": "Resolve Tags",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.needsCreation }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        1008
+      ],
+      "id": "f2d36064-ffc9-4fcc-8180-0b6fe5f2976c",
+      "name": "Tag Needs Creation?",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "tag",
+        "name": "={{ $json.tagName }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.activeCampaign",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        912
+      ],
+      "id": "c5205ed9-0731-48a9-b6e3-84dfb5f2a447",
+      "name": "Create Tag in AC",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "activeCampaignApi": {
+          "id": "6hku5zrCPrTu3XHc",
+          "name": "ActiveCampaign Crewest Account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t1",
+              "name": "tagId",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "t2",
+              "name": "contactId",
+              "value": "={{ $('Resolve Tags').item.json.contactId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1488,
+        912
+      ],
+      "id": "a50ae478-d2e1-4d91-aae3-d85e64d1f2e4",
+      "name": "Prep Created Tag",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t3",
+              "name": "tagId",
+              "value": "={{ $json.tagId }}",
+              "type": "string"
+            },
+            {
+              "id": "t4",
+              "name": "contactId",
+              "value": "={{ $json.contactId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1488,
+        1120
+      ],
+      "id": "d8a2f325-f12e-45d8-9a5e-62e0cb4639ff",
+      "name": "Prep Existing Tag",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "contactTag",
+        "tagId": "={{ $json.tagId }}",
+        "contactId": "={{ $json.contactId }}"
+      },
+      "type": "n8n-nodes-base.activeCampaign",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        1008
+      ],
+      "id": "3265af7c-433d-4fea-9050-5154b6f7c28a",
+      "name": "Add Tag to Contact",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "activeCampaignApi": {
+          "id": "6hku5zrCPrTu3XHc",
+          "name": "ActiveCampaign Crewest Account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1888,
+        1008
+      ],
+      "id": "6d0d6b46-a139-491d-94b8-875ec8a3f224",
+      "name": "END"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Fields by Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Artworks": {
+      "main": [
+        [
+          {
+            "node": "Split Out Artworks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search For Existing Artists": {
+      "main": [
+        [
+          {
+            "node": "Create or update Artist record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update Artist record": {
+      "main": [
+        [
+          {
+            "node": "Detect Artworks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Artworks": {
+      "main": [
+        [
+          {
+            "node": "Create or update Artworks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Success IDs": {
+      "main": [
+        [
+          {
+            "node": "Prepare Submission Log Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Submission Log Data": {
+      "main": [
+        [
+          {
+            "node": "Update Import Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update Artworks": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Success IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Import Log": {
+      "main": [
+        [
+          {
+            "node": "Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success?": {
+      "main": [
+        [
+          {
+            "node": "Update Artist Status to Pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture Artist & Campaign Data": {
+      "main": [
+        [
+          {
+            "node": "Search Existing Campaigns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Existing Campaigns": {
+      "main": [
+        [
+          {
+            "node": "Create or update Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update Campaign": {
+      "main": [
+        [
+          {
+            "node": "Search For Existing Artists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Fields by Key": {
+      "main": [
+        [
+          {
+            "node": "Capture Artist & Campaign Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Artist Status to Pending": {
+      "main": [
+        [
+          {
+            "node": "Get Campaign Email Info2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Campaign Email Info2": {
+      "main": [
+        [
+          {
+            "node": "Notification Email Prep for Admins and Submitter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notification Email Prep for Admins and Submitter": {
+      "main": [
+        [
+          {
+            "node": "AI Email Beautifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Email Beautifier": {
+      "main": [
+        [
+          {
+            "node": "Send Admin Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4o": {
+      "main": [],
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Email Beautifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email HTML Parser": {
+      "main": [],
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Email Beautifier",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a contact": {
+      "main": [
+        [
+          {
+            "node": "Extract AC List IDs To Add To",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Admin Notification": {
+      "main": [
+        [
+          {
+            "node": "Prep Active Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Active Campaign": {
+      "main": [
+        [
+          {
+            "node": "Create a contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract AC List IDs To Add To": {
+      "main": [
+        [
+          {
+            "node": "Add a contact to lists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add a contact to lists": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Get All AC Tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All AC Tags": {
+      "main": [
+        [
+          {
+            "node": "Extract Tags to Add to AC1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Tags to Add to AC1": {
+      "main": [
+        [
+          {
+            "node": "Resolve Tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Tags": {
+      "main": [
+        [
+          {
+            "node": "Tag Needs Creation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag Needs Creation?": {
+      "main": [
+        [
+          {
+            "node": "Create Tag in AC",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prep Existing Tag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Tag in AC": {
+      "main": [
+        [
+          {
+            "node": "Prep Created Tag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Created Tag": {
+      "main": [
+        [
+          {
+            "node": "Add Tag to Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Existing Tag": {
+      "main": [
+        [
+          {
+            "node": "Add Tag to Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Tag to Contact": {
+      "main": [
+        [
+          {
+            "node": "END",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "executionTimeout": 300,
+    "errorWorkflow": "iAGcwyumKEOc83kj",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "647a2b21-5617-410a-9378-88134e172d22",
+  "activeVersionId": "647a2b21-5617-410a-9378-88134e172d22",
+  "versionCounter": 35,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-03-06T03:27:18.255Z",
+      "createdAt": "2026-03-06T03:27:18.255Z",
+      "role": "workflow:owner",
+      "workflowId": "QtP1J9Fwr5SPRG0u",
+      "projectId": "JGYn5ywz4orUHX0d",
+      "project": {
+        "updatedAt": "2025-09-03T13:30:05.000Z",
+        "createdAt": "2025-08-20T16:34:39.654Z",
+        "id": "JGYn5ywz4orUHX0d",
+        "name": "MCP Automation Development",
+        "type": "team",
+        "icon": {
+          "type": "icon",
+          "value": "layers"
+        },
+        "description": "Various internal and client development projects",
+        "creatorId": null
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-06T04:39:19.000Z",
+    "createdAt": "2026-03-06T04:39:07.775Z",
+    "versionId": "647a2b21-5617-410a-9378-88134e172d22",
+    "workflowId": "QtP1J9Fwr5SPRG0u",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "9cedcdaa-b475-436d-a44b-33d73a3d88ca",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -48,
+          0
+        ],
+        "id": "fcf57bc4-cfdd-4740-b160-6916c51a3d80",
+        "name": "Webhook",
+        "webhookId": "9cedcdaa-b475-436d-a44b-33d73a3d88ca"
+      },
+      {
+        "parameters": {
+          "jsCode": "const formData = $('Webhook').first().json.body.data;\nconst fieldMap = {};\nformData.forEach(field => { if (field.custom_key) { fieldMap[field.custom_key] = field.value; } });\nconst artworkFields = ['url','title','description','type','year_created','medium','subject','purchase_url'];\nconst artworks = [];\nfor (let i = 1; i <= 5; i++) {\n  const prefix = `artwork${i}`;\n  if (fieldMap[`${prefix}_title`] || fieldMap[`${prefix}_url`]) {\n    const artwork = { artwork_number: i };\n    artworkFields.forEach(field => {\n      const value = fieldMap[`${prefix}_${field}`];\n      if (field === 'url' && value && typeof value === 'object') {\n        artwork.image_url = value.url; artwork.image_filename = value.name; artwork.image_size = value.size; artwork.image_width = value.width; artwork.image_height = value.height;\n      } else { artwork[field] = value || null; }\n    });\n    artworks.push(artwork);\n  }\n}\nreturn { artwork_count: artworks.length, artworks, artist: { first_name: fieldMap.first_name, last_name: fieldMap.last_name, email: fieldMap.email, bio: fieldMap.bio } };"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1568,
+          0
+        ],
+        "id": "5e2489e7-ca26-426e-ab99-b4e493ccf46d",
+        "name": "Detect Artworks"
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "artworks",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          1792,
+          0
+        ],
+        "id": "9c29cd2f-a0a9-40b8-97c2-25bd73aa17ed",
+        "name": "Split Out Artworks"
+      },
+      {
+        "parameters": {
+          "authentication": "airtableOAuth2Api",
+          "operation": "search",
+          "base": {
+            "__rl": true,
+            "value": "appDFU2JdAw2Ckax4",
+            "mode": "list",
+            "cachedResultName": "AA Rolling Submissions"
+          },
+          "table": {
+            "__rl": true,
+            "value": "tblZZS5EeWmxmyCTB",
+            "mode": "list",
+            "cachedResultName": "Artists"
+          },
+          "filterByFormula": "={{ \"{Email}=\\\"\".concat($('Capture Artist & Campaign Data').item.json.email).concat(\"\\\"\") }}",
+          "returnAll": false,
+          "limit": 1,
+          "options": {}
+        },
+        "type": "n8n-nodes-base.airtable",
+        "typeVersion": 2.1,
+        "position": [
+          1072,
+          0
+        ],
+        "id": "4407c5be-07f4-4944-8a19-bb0da39adb18",
+        "name": "Search For Existing Artists",
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "airtableOAuth2Api": {
+            "id": "HOvSYV0GVGpkzhdA",
+            "name": "Airtable Personal Access Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "airtableOAuth2Api",
+          "operation": "upsert",
+          "base": {
+            "__rl": true,
+            "value": "appDFU2JdAw2Ckax4",
+            "mode": "list",
+            "cachedResultName": "AA Rolling Submissions"
+          },
+          "table": {
+            "__rl": true,
+            "value": "tblZZS5EeWmxmyCTB",
+            "mode": "list",
+            "cachedResultName": "Artists"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "First Name": "={{ $('Capture Artist & Campaign Data').item.json['First Name'] }}",
+              "Last Name": "={{ $('Capture Artist & Campaign Data').item.json['Last Name'] }}",
+              "Email": "={{ $('Capture Artist & Campaign Data').item.json.email }}",
+              "Bio": "={{ $('Capture Artist & Campaign Data').item.json.bio }}",
+              "Artist Statement": "={{ $('Capture Artist & Campaign Data').item.json.artist_statement }}",
+              "Contact Image URL": "={{ $('Capture Artist & Campaign Data').item.json.headshot_url }}",
+              "Primary Address": "={{ $('Capture Artist & Campaign Data').item.json.address_street }}",
+              "City": "={{ $('Capture Artist & Campaign Data').item.json.address_suburb }}",
+              "State": "={{ $('Capture Artist & Campaign Data').item.json.address_state }}",
+              "Address 2": "={{ $('Capture Artist & Campaign Data').item.json.address_subpremise }}",
+              "Country": "={{ $('Capture Artist & Campaign Data').item.json.address_country }}",
+              "Website": "={{ $('Capture Artist & Campaign Data').item.json.website_url }}",
+              "Instagram URL": "={{ $('Capture Artist & Campaign Data').item.json.instagram_url }}",
+              "Facebook URL": "={{ $('Capture Artist & Campaign Data').item.json.facebook_url }}",
+              "Twitter URL": "={{ $('Capture Artist & Campaign Data').item.json.twitter_url }}",
+              "LinkedIn URL": "={{ $('Capture Artist & Campaign Data').item.json.linkedin_url }}",
+              "Pinterest URL": "={{ $('Capture Artist & Campaign Data').item.json.pinterest_url }}",
+              "Submission ID (Paperform)": "={{ $('Capture Artist & Campaign Data').item.json.submission_id }}",
+              "Date Imported": "={{ $('Capture Artist & Campaign Data').item.json.date_imported }}",
+              "id": "={{ $('Search For Existing Artists').item.json.id }}",
+              "Contact Thumbnail": "={{ [{\"url\": $('Capture Artist & Campaign Data').item.json.headshot_url }] }}",
+              "Campaigns": "={{ [$('Create or update Campaign').item.json.id] }}",
+              "Zip": "={{ $('Capture Artist & Campaign Data').item.json.address_postcode }}"
+            },
+            "matchingColumns": [
+              "id"
+            ],
+            "schema": [
+              {
+                "id": "id",
+                "displayName": "id",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.airtable",
+        "typeVersion": 2.1,
+        "position": [
+          1296,
+          0
+        ],
+        "id": "a53f4895-5437-4ccd-82db-66867232acd2",
+        "name": "Create or update Artist record",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "airtableOAuth2Api": {
+            "id": "HOvSYV0GVGpkzhdA",
+            "name": "Airtable Personal Access Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "fieldsToAggregate": {
+            "fieldToAggregate": [
+              {
+                "fieldToAggregate": "id",
+                "renameField": true,
+                "outputFieldName": "artwork_import_ids"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.aggregate",
+        "typeVersion": 1,
+        "position": [
+          2240,
+          0
+        ],
+        "id": "c5c1f1ba-3b2e-40e3-9288-2d69ff3ebf1c",
+        "name": "Aggregate Success IDs"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "a1",
+                "name": "submission_id",
+                "value": "={{ $('Webhook').item.json.body.submission_id }}",
+                "type": "string"
+              },
+              {
+                "id": "a2",
+                "name": "body.created_at",
+                "value": "={{ $('Webhook').item.json.body.created_at }}",
+                "type": "string"
+              },
+              {
+                "id": "a3",
+                "name": "artwork_count",
+                "value": "={{ $('Detect Artworks').item.json.artwork_count }}",
+                "type": "string"
+              },
+              {
+                "id": "a4",
+                "name": "artist.first_name",
+                "value": "={{ $('Capture Artist & Campaign Data').item.json['First Name'] }}",
+                "type": "string"
+              },
+              {
+                "id": "a5",
+                "name": "artist.last_name",
+                "value": "={{ $('Capture Artist & Campaign Data').item.json['Last Name'] }}",
+                "type": "string"
+              },
+              {
+                "id": "a6",
+                "name": "artist.email",
+                "value": "={{ $('Capture Artist & Campaign Data').item.json.email }}",
+                "type": "string"
+              },
+              {
+                "id": "a7",
+                "name": "artwork_import_ids",
+                "value": "={{ $json.artwork_import_ids }}",
+                "type": "array"
+              },
+              {
+                "id": "a8",
+                "name": "artist_id",
+                "value": "={{ $('Create or update Artist record').item.json.id }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          208,
+          304
+        ],
+        "id": "a347c830-0ae0-4d72-bfcf-884eb6ab91fe",
+        "name": "Prepare Submission Log Data"
+      },
+      {
+        "parameters": {
+          "authentication": "airtableOAuth2Api",
+          "operation": "create",
+          "base": {
+            "__rl": true,
+            "value": "appDFU2JdAw2Ckax4",
+            "mode": "list",
+            "cachedResultName": "AA Rolling Submissions"
+          },
+          "table": {
+            "__rl": true,
+            "value": "tblRRwlDM1M6j0ifz",
+            "mode": "list",
+            "cachedResultName": "Import Logs"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "Import ID": "={{ $json.submission_id }}",
+              "Timestamp": "={{ $json.body.created_at }}",
+              "Artist First Name": "={{ $json.artist.first_name }}",
+              "Artist Last Name": "={{ $json.artist.last_name }}",
+              "Artist Email": "={{ $json.artist.email }}",
+              "Number of Artworks Imported": "={{ $json.artwork_count }}",
+              "Artwork IDs Imported": "={{ $json.artwork_import_ids }}",
+              "Import Status": "SUCCESS",
+              "Campaign Name": "={{ $('Capture Artist & Campaign Data').item.json.campaign }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "Import ID",
+                "displayName": "Import ID",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.airtable",
+        "typeVersion": 2.1,
+        "position": [
+          432,
+          304
+        ],
+        "id": "f9199bd5-bd6c-4819-8675-a5259221c242",
+        "name": "Update Import Log",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "airtableOAuth2Api": {
+            "id": "HOvSYV0GVGpkzhdA",
+            "name": "Airtable Personal Access Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "airtableOAuth2Api",
+          "operation": "upsert",
+          "base": {
+            "__rl": true,
+            "value": "appDFU2JdAw2Ckax4",
+            "mode": "list",
+            "cachedResultName": "AA Rolling Submissions"
+          },
+          "table": {
+            "__rl": true,
+            "value": "tblh3npWVZgkWSILm",
+            "mode": "list",
+            "cachedResultName": "Artworks"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "Artist": "={{ [ $('Create or update Artist record').item.json.id ] }}",
+              "Artist Email": "={{ $('Create or update Artist record').item.json.fields.Email }}",
+              "Piece Name": "={{ $('Split Out Artworks').item.json.title }}",
+              "Type": "={{ $('Split Out Artworks').item.json.type }}",
+              "Medium": "={{ $('Split Out Artworks').item.json.medium }}",
+              "Subject Matter": "={{ $('Split Out Artworks').item.json.subject }}",
+              "Description": "={{ $('Split Out Artworks').item.json.description }}",
+              "Link to Purchase URL": "={{ $('Split Out Artworks').item.json.purchase_url }}",
+              "Piece Image URLs": "={{ $('Split Out Artworks').item.json.image_url }}",
+              "Year Created Date": "={{ $('Split Out Artworks').item.json.year_created }}",
+              "Status": "Pending - Imported",
+              "Date Imported": "={{ $('Webhook').item.json.body.created_at }}",
+              "Piece Thumbnail": "={{ [ { \"url\": $('Split Out Artworks').item.json.image_url } ] }}",
+              "Collections": "={{ $('Capture Artist & Campaign Data').item.json.campaign }}",
+              "Related Campaign": "={{ $('Capture Artist & Campaign Data').item.json.campaign }}",
+              "Campaign (Linked by Name)": "={{ [$('Create or update Campaign').item.json.id] }}",
+              "Height": 0,
+              "Width": 0,
+              "Depth": 0
+            },
+            "matchingColumns": [
+              "id"
+            ],
+            "schema": [
+              {
+                "id": "id",
+                "displayName": "id",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true
+              }
+            ]
+          },
+          "options": {
+            "typecast": false
+          }
+        },
+        "type": "n8n-nodes-base.airtable",
+        "typeVersion": 2.1,
+        "position": [
+          2016,
+          0
+        ],
+        "id": "29ed93fa-a459-458d-9330-1e5d581b69bf",
+        "name": "Create or update Artworks",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "airtableOAuth2Api": {
+            "id": "HOvSYV0GVGpkzhdA",
+            "name": "Airtable Personal Access Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "airtableOAuth2Api",
+          "operation": "update",
+          "base": {
+            "__rl": true,
+            "value": "appDFU2JdAw2Ckax4",
+            "mode": "list",
+            "cachedResultName": "AA Rolling Submissions"
+          },
+          "table": {
+            "__rl": true,
+            "value": "tblZZS5EeWmxmyCTB",
+            "mode": "list",
+            "cachedResultName": "Artists"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "id": "={{ $('Prepare Submission Log Data').item.json.artist_id }}",
+              "Status": "Pending - Imported"
+            },
+            "matchingColumns": [
+              "id"
+            ],
+            "schema": [
+              {
+                "id": "id",
+                "displayName": "id",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.airtable",
+        "typeVersion": 2.1,
+        "position": [
+          912,
+          288
+        ],
+        "id": "319b9a78-7757-4686-b4a7-b79a7df8776e",
+        "name": "Update Artist Status to Pending",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "airtableOAuth2Api": {
+            "id": "HOvSYV0GVGpkzhdA",
+            "name": "Airtable Personal Access Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "c1",
+                "leftValue": "={{ $('Update Import Log').item.json.fields['Import Status'] }}",
+                "rightValue": "SUCCESS",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals",
+                  "name": "filter.operator.equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          640,
+          304
+        ],
+        "id": "748da73c-d907-47ef-a9ff-ccde3b8d699b",
+        "name": "Success?"
+      },
+      {
+        "parameters": {
+          "content": "## V1.0 Hardened — Process Campaigns and Artists",
+          "height": 272,
+          "width": 1312,
+          "color": 7
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          176,
+          -64
+        ],
+        "typeVersion": 1,
+        "id": "8acbe6ac-11c6-4997-b892-c39edb6eb857",
+        "name": "Sticky Note1"
+      },
+      {
+        "parameters": {
+          "content": "## Process Artworks",
+          "height": 272,
+          "width": 848,
+          "color": 7
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          1520,
+          -64
+        ],
+        "typeVersion": 1,
+        "id": "ce910c54-8e88-4b84-919e-926ab6bee63e",
+        "name": "Sticky Note2"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "b1",
+                "name": "=First Name",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.first_name.value }}",
+                "type": "string"
+              },
+              {
+                "id": "b2",
+                "name": "Last Name",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.last_name.value }}",
+                "type": "string"
+              },
+              {
+                "id": "b3",
+                "name": "email",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.email.value }}",
+                "type": "string"
+              },
+              {
+                "id": "b4",
+                "name": "phone",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.phone.value }}",
+                "type": "string"
+              },
+              {
+                "id": "b5",
+                "name": "mailing_address",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.mailing_address.value }}",
+                "type": "string"
+              },
+              {
+                "id": "b6",
+                "name": "address_subpremise",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_subpremise'].value }}",
+                "type": "string"
+              },
+              {
+                "id": "b7",
+                "name": "address_streetNumber",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_streetNumber'].value }}",
+                "type": "string"
+              },
+              {
+                "id": "b8",
+                "name": "address_street",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_street'].value }}",
+                "type": "string"
+              },
+              {
+                "id": "b9",
+                "name": "address_suburb",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_suburb'].value }}",
+                "type": "string"
+              },
+              {
+                "id": "b10",
+                "name": "address_state",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_state'].value }}",
+                "type": "string"
+              },
+              {
+                "id": "b11",
+                "name": "address_postcode",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_postcode'].value }}",
+                "type": "string"
+              },
+              {
+                "id": "b12",
+                "name": "address_country",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_country'].value }}",
+                "type": "string"
+              },
+              {
+                "id": "b13",
+                "name": "headshot_url",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.headshot_url.value[0] }}",
+                "type": "string"
+              },
+              {
+                "id": "b14",
+                "name": "bio",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.bio.value }}",
+                "type": "string"
+              },
+              {
+                "id": "b15",
+                "name": "artist_statement",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.artist_statement.value }}",
+                "type": "string"
+              },
+              {
+                "id": "b16",
+                "name": "website_url",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.website_url.value }}",
+                "type": "string"
+              },
+              {
+                "id": "b17",
+                "name": "instagram_url",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.instagram_url.value }}",
+                "type": "string"
+              },
+              {
+                "id": "b18",
+                "name": "facebook_url",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.facebook_url.value }}",
+                "type": "string"
+              },
+              {
+                "id": "b19",
+                "name": "twitter_url",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.twitter_url.value }}",
+                "type": "string"
+              },
+              {
+                "id": "b20",
+                "name": "linkedin_url",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.linkedin_url.value }}",
+                "type": "string"
+              },
+              {
+                "id": "b21",
+                "name": "pinterest_url",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.pinterest_url.value }}",
+                "type": "string"
+              },
+              {
+                "id": "b22",
+                "name": "date_imported",
+                "value": "={{ $('Normalize Fields by Key').item.json.created_at }}",
+                "type": "string"
+              },
+              {
+                "id": "b23",
+                "name": "submission_id",
+                "value": "={{ $('Normalize Fields by Key').item.json.submission_id }}",
+                "type": "string"
+              },
+              {
+                "id": "b24",
+                "name": "campaign",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.campaign.value }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          432,
+          0
+        ],
+        "id": "0b471c8b-b51c-441a-afa0-83a455719e8f",
+        "name": "Capture Artist & Campaign Data"
+      },
+      {
+        "parameters": {
+          "authentication": "airtableOAuth2Api",
+          "operation": "search",
+          "base": {
+            "__rl": true,
+            "value": "appDFU2JdAw2Ckax4",
+            "mode": "list",
+            "cachedResultName": "AA Rolling Submissions"
+          },
+          "table": {
+            "__rl": true,
+            "value": "tblr0oR74rtvR6LN2",
+            "mode": "list",
+            "cachedResultName": "Campaigns"
+          },
+          "filterByFormula": "={{ \"{Campaign Name}=\\\"\".concat($json.campaign).concat(\"\\\"\") }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.airtable",
+        "typeVersion": 2.1,
+        "position": [
+          640,
+          0
+        ],
+        "id": "bd91294c-2704-4580-8d64-00e623c9d15e",
+        "name": "Search Existing Campaigns",
+        "alwaysOutputData": true,
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "airtableOAuth2Api": {
+            "id": "HOvSYV0GVGpkzhdA",
+            "name": "Airtable Personal Access Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "airtableOAuth2Api",
+          "operation": "upsert",
+          "base": {
+            "__rl": true,
+            "value": "appDFU2JdAw2Ckax4",
+            "mode": "list",
+            "cachedResultName": "AA Rolling Submissions"
+          },
+          "table": {
+            "__rl": true,
+            "value": "tblr0oR74rtvR6LN2",
+            "mode": "list",
+            "cachedResultName": "Campaigns"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "id": "={{ $json.id }}",
+              "Campaign Name": "={{ $json['Campaign Name'] }}"
+            },
+            "matchingColumns": [
+              "id"
+            ],
+            "schema": [
+              {
+                "id": "id",
+                "displayName": "id",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": true
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.airtable",
+        "typeVersion": 2.1,
+        "position": [
+          848,
+          0
+        ],
+        "id": "e4a26454-1cf6-4f8b-a858-78f614650d9b",
+        "name": "Create or update Campaign",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "airtableOAuth2Api": {
+            "id": "HOvSYV0GVGpkzhdA",
+            "name": "Airtable Personal Access Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "content": "## Prepare Logs and Comms",
+          "height": 416,
+          "width": 944,
+          "color": 7
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          176,
+          224
+        ],
+        "typeVersion": 1,
+        "id": "2b70e296-d677-483e-913a-5f3f156c5757",
+        "name": "Sticky Note"
+      },
+      {
+        "parameters": {
+          "jsCode": "const item=items[0];const body=item.json.body||{};const dataArray=body.data||[];const fieldsByKey={};const fieldsList=[];function normalizeValue(f){const v=f.value;if(v===null||v===undefined)return null;if(Array.isArray(v)){const urls=v.map(x=>(x&&typeof x==='object'?x.url:null)).filter(Boolean);return urls.length>0?urls:v;}if(typeof v==='object'){if(v.url)return v.url;return v;}return v;}for(const field of dataArray){if(!field)continue;const title=field.title||'';const type=field.type||'';const customKey=field.custom_key||null;const key=field.key||null;const identifier=customKey||key;const normalizedValue=normalizeValue(field);const fieldEntry={title,key,custom_key:customKey,type,value:normalizedValue,raw:field};if(identifier){fieldsByKey[identifier]=fieldEntry;}fieldsList.push({title,key,custom_key:customKey,type,value:normalizedValue});}return[{json:{form_id:body.form_id,slug:body.slug,submission_id:body.submission_id,created_at:body.created_at,fieldsByKey,fieldsList,device:body.device,charge:body.charge,pdfs:body.pdfs}}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          240,
+          0
+        ],
+        "id": "ed47cfb3-6070-4294-8055-5ebe7839fea3",
+        "name": "Normalize Fields by Key"
+      },
+      {
+        "parameters": {
+          "content": "## Send Emails",
+          "height": 416,
+          "width": 1216,
+          "color": 7
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          1152,
+          224
+        ],
+        "typeVersion": 1,
+        "id": "dcc2bd42-3159-4352-bc12-bbc5d20ada84",
+        "name": "Get Campaign Email Info"
+      },
+      {
+        "parameters": {
+          "authentication": "airtableOAuth2Api",
+          "base": {
+            "__rl": true,
+            "value": "appDFU2JdAw2Ckax4",
+            "mode": "list",
+            "cachedResultName": "AA Rolling Submissions"
+          },
+          "table": {
+            "__rl": true,
+            "value": "tblr0oR74rtvR6LN2",
+            "mode": "list",
+            "cachedResultName": "Campaigns"
+          },
+          "id": "={{ $('Create or update Campaign').item.json.id }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.airtable",
+        "typeVersion": 2.1,
+        "position": [
+          1312,
+          288
+        ],
+        "id": "f089b891-656c-48ec-9b70-03cc9cdf6144",
+        "name": "Get Campaign Email Info2",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "airtableOAuth2Api": {
+            "id": "HOvSYV0GVGpkzhdA",
+            "name": "Airtable Personal Access Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "e1",
+                "name": "Admin Notification Email Addresses",
+                "value": "={{ $json['Campaign Contact Emails'] ? $json['Campaign Contact Emails'].split(',').map(e => e.trim()).filter(e => e !== '').join(', ') : '' }}",
+                "type": "string"
+              },
+              {
+                "id": "e2",
+                "name": "Admin Notification Subject",
+                "value": "={{ $json['Admin Notification Subject'].replace('[[campaign_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.campaign.value || '').replace('[[artist_first_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.first_name.value || '').replace('[[artist_last_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.last_name.value || '') }}",
+                "type": "string"
+              },
+              {
+                "id": "e3",
+                "name": "Admin Notification Body",
+                "value": "={{ $json['Admin Notification Body'].replaceAll('[[campaign_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.campaign.value || '').replaceAll('[[artist_first_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.first_name.value || '').replaceAll('[[artist_last_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.last_name.value || '') }}",
+                "type": "string"
+              },
+              {
+                "id": "e4",
+                "name": "Submitter Email Address",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.email.value }}",
+                "type": "string"
+              },
+              {
+                "id": "e5",
+                "name": "Submitter Thank You Subject",
+                "value": "={{ $json['Submitter Thank You Subject'].replace('[[campaign_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.campaign.value || '') }}",
+                "type": "string"
+              },
+              {
+                "id": "e6",
+                "name": "Submitter Thank You Body",
+                "value": "={{ $json['Submitter Thank You Body'].replaceAll('[[campaign_name]]', $('Normalize Fields by Key').item.json.fieldsByKey.campaign.value || '') }}",
+                "type": "string"
+              },
+              {
+                "id": "e7",
+                "name": "Campaign Logo Small",
+                "value": "={{ $json['Campaign Logo'][0].thumbnails.small.url }}",
+                "type": "string"
+              },
+              {
+                "id": "e8",
+                "name": "Campaign Logo Medium",
+                "value": "={{ $json['Campaign Logo'][0].thumbnails.large.url }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1536,
+          288
+        ],
+        "id": "bf4d2628-442c-474a-8fde-0232b91ab0f7",
+        "name": "Notification Email Prep for Admins and Submitter"
+      },
+      {
+        "parameters": {
+          "content": "## V1.0 Hardened",
+          "height": 1072,
+          "width": 304
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          -160,
+          224
+        ],
+        "typeVersion": 1,
+        "id": "dde39deb-afc3-4cc9-8780-3fa3af53d04d",
+        "name": "Sticky Note3"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=You are an expert email designer.\n\nLogo URL: {{ $json['Campaign Logo Medium'] }}\n\nSubject: {{ $json['Admin Notification Subject'] }}\n\nBody:\n{{ $json['Admin Notification Body'] }}",
+          "hasOutputParser": true,
+          "batching": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.chainLlm",
+        "typeVersion": 1.7,
+        "position": [
+          1760,
+          288
+        ],
+        "id": "1af4c1c1-6ced-4767-9ca0-59d51e9656f2",
+        "name": "AI Email Beautifier",
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "value": "gpt-4o",
+            "mode": "list",
+            "cachedResultName": "gpt-4o"
+          },
+          "options": {
+            "temperature": 0.3
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.2,
+        "position": [
+          1728,
+          512
+        ],
+        "id": "f72db3cb-2cd2-4a88-9f46-5ccd7556d300",
+        "name": "OpenAI GPT-4o",
+        "credentials": {
+          "openAiApi": {
+            "id": "UFKlS8KRGWM7HW7J",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsonSchemaExample": "{\n  \"admin_html\": \"<html>...</html>\",\n  \"brand_colors\": {\"primary\": \"#0066CC\"}\n}"
+        },
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.3,
+        "position": [
+          1936,
+          512
+        ],
+        "id": "7751a43d-bafc-4779-9f8c-b1170cb69908",
+        "name": "Email HTML Parser"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $('Notification Email Prep for Admins and Submitter').item.json['Admin Notification Email Addresses'] }}",
+          "subject": "={{ $('Notification Email Prep for Admins and Submitter').item.json['Admin Notification Subject'] }}",
+          "message": "={{ $json.output.admin_html }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          2080,
+          288
+        ],
+        "id": "577d1219-c57a-4028-94c9-9501c4a9676e",
+        "name": "Send Admin Notification",
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 3000,
+        "webhookId": "f5c484f8-4b0b-4e32-8430-e81aca343964",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "xh1ZWlUuCtrojk5F",
+            "name": "Gmail account"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "email": "={{ $json['Email Address'] }}",
+          "updateIfExists": true,
+          "additionalFields": {
+            "fieldValues": {
+              "property": [
+                {
+                  "field": "9",
+                  "value": "={{ $json['Mailing Address'] }}"
+                },
+                {
+                  "field": "4",
+                  "value": "={{ $json['Street Address'] }}"
+                },
+                {
+                  "field": "5",
+                  "value": "={{ $json.City }}"
+                },
+                {
+                  "field": "6",
+                  "value": "={{ $json.State }}"
+                },
+                {
+                  "field": "7",
+                  "value": "={{ $json['Zip Code'] }}"
+                },
+                {
+                  "field": "15",
+                  "value": "={{ $json.Country }}"
+                },
+                {
+                  "field": "8",
+                  "value": "={{ $json['Primary Website'] }}"
+                },
+                {
+                  "field": "10",
+                  "value": "={{ $json['Instagram URL'] }}"
+                },
+                {
+                  "field": "12",
+                  "value": "={{ $json['Facebook URL'] }}"
+                },
+                {
+                  "field": "11",
+                  "value": "={{ $json['Twitter URL'] }}"
+                },
+                {
+                  "field": "57",
+                  "value": "={{ $json['Linkedin URL'] }}"
+                }
+              ]
+            },
+            "firstName": "={{ $json['First Name'] }}",
+            "lastName": "={{ $json['Last Name'] }}",
+            "phone": "={{ $json.Phone }}"
+          }
+        },
+        "type": "n8n-nodes-base.activeCampaign",
+        "typeVersion": 1,
+        "position": [
+          416,
+          768
+        ],
+        "id": "ce907346-094f-4dd2-a198-3a537f786440",
+        "name": "Create a contact",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "activeCampaignApi": {
+            "id": "6hku5zrCPrTu3XHc",
+            "name": "ActiveCampaign Crewest Account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "content": "## Add To Active Campaign",
+          "height": 624,
+          "width": 2180,
+          "color": 7
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          176,
+          672
+        ],
+        "typeVersion": 1,
+        "id": "2bb4ad3a-2d60-4c2a-9363-9c94643c4589",
+        "name": "Get Campaign Email Info1"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "p1",
+                "name": "First Name",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.first_name.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p2",
+                "name": "Last Name",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.last_name.raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p3",
+                "name": "Email Address",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.email.raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p4",
+                "name": "Campaign Name",
+                "value": "={{ $('Search Existing Campaigns').item.json['Campaign Name'] }}",
+                "type": "string"
+              },
+              {
+                "id": "p5",
+                "name": "Active Campaign Lists",
+                "value": "={{ $('Search Existing Campaigns').item.json['Active Campaign Lists'] }}",
+                "type": "array"
+              },
+              {
+                "id": "p6",
+                "name": "Active Campaign Tags",
+                "value": "={{ $('Search Existing Campaigns').item.json['Active Campaign Tags'] }}",
+                "type": "string"
+              },
+              {
+                "id": "p7",
+                "name": "Phone",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.phone.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p8",
+                "name": "Mailing Address",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.mailing_address.raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p9",
+                "name": "Street Address",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_street'].raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p10",
+                "name": "City",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_suburb'].raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p11",
+                "name": "State",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_state'].raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p12",
+                "name": "Zip Code",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_postcode'].raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p13",
+                "name": "Country",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey['3ektk_country'].raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p14",
+                "name": "Bio",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.bio.raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p15",
+                "name": "Artist Statement",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.artist_statement.raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p16",
+                "name": "Primary Website",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.website_url.raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p17",
+                "name": "Instagram URL",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.instagram_url.raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p18",
+                "name": "Facebook URL",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.facebook_url.raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p19",
+                "name": "Twitter URL",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.twitter_url.raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p20",
+                "name": "Linkedin URL",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.linkedin_url.raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p21",
+                "name": "Pinterest URL",
+                "value": "={{ $('Normalize Fields by Key').item.json.fieldsByKey.pinterest_url.raw.value }}",
+                "type": "string"
+              },
+              {
+                "id": "p22",
+                "name": "Active Campaign Lists To Add To",
+                "value": "={{ $('Search Existing Campaigns').item.json['Active Campaign Lists'] }}",
+                "type": "array"
+              },
+              {
+                "id": "p23",
+                "name": "Active Campaign Tags To Add",
+                "value": "={{ $('Search Existing Campaigns').item.json['Active Campaign Tags'] }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          208,
+          768
+        ],
+        "id": "988c4a8b-04e4-4d4c-be36-a26b5b4d27b4",
+        "name": "Prep Active Campaign"
+      },
+      {
+        "parameters": {
+          "jsCode": "const contactItem=$input.first().json;const contactId=contactItem.id;const prepJson=$node['Prep Active Campaign'].json;let lists=prepJson['Active Campaign Lists To Add To']||prepJson['Active Campaign Lists']||[];if(!Array.isArray(lists)){lists=[];}const items=lists.map(str=>{const match=String(str).match(/ListID=(\\d+)/);return match?match[1]:null;}).filter(id=>id!==null).map(listId=>({json:{contactId,listId}}));return items;"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          624,
+          768
+        ],
+        "id": "94558b3f-9b13-4ec4-88c9-5131eec70273",
+        "name": "Extract AC List IDs To Add To"
+      },
+      {
+        "parameters": {
+          "resource": "contactList",
+          "listId": "={{ $json.listId }}",
+          "contactId": "={{ $json.contactId }}"
+        },
+        "type": "n8n-nodes-base.activeCampaign",
+        "typeVersion": 1,
+        "position": [
+          848,
+          768
+        ],
+        "id": "66eeda89-cd10-44ef-a5f7-bd3ce7c7f019",
+        "name": "Add a contact to lists",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "activeCampaignApi": {
+            "id": "6hku5zrCPrTu3XHc",
+            "name": "ActiveCampaign Crewest Account"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "fieldsToAggregate": {
+            "fieldToAggregate": [
+              {}
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.aggregate",
+        "typeVersion": 1,
+        "position": [
+          1056,
+          768
+        ],
+        "id": "116d525e-c245-4ec6-add8-7ed7e58aab27",
+        "name": "Aggregate",
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "const prepJson=$node['Prep Active Campaign'].json;const tagString=prepJson['Active Campaign Tags To Add']||'';const tags=String(tagString).split(',').map(t=>t.trim()).filter(t=>t.length>0);return tags.map(tag=>({json:{tag}}));"
+        },
+        "id": "7225c4a5-a619-4a43-9fb3-8604047d9842",
+        "name": "Extract Tags to Add to AC1",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          640,
+          1008
+        ],
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "resource": "tag",
+          "operation": "getAll",
+          "returnAll": true
+        },
+        "type": "n8n-nodes-base.activeCampaign",
+        "typeVersion": 1,
+        "position": [
+          432,
+          1008
+        ],
+        "id": "1e95013e-88e2-4ab8-8b85-b73a4c5e6f9f",
+        "name": "Get All AC Tags",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "activeCampaignApi": {
+            "id": "6hku5zrCPrTu3XHc",
+            "name": "ActiveCampaign Crewest Account"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "const prepJson=$node['Prep Active Campaign'].json;const tagString=prepJson['Active Campaign Tags To Add']||'';const desiredTags=String(tagString).split(',').map(t=>t.trim()).filter(t=>t.length>0);const contactData=$node['Create a contact'].json;const contactId=contactData.contact?.id||contactData.id;const allACTags=$('Get All AC Tags').all().map(item=>item.json);return desiredTags.map(tagName=>{const match=allACTags.find(t=>(t.tag||t.name||'').toLowerCase()===tagName.toLowerCase());return{json:{tagName,tagId:match?(match.id||null):null,needsCreation:!match,contactId:String(contactId)}};});"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          832,
+          1008
+        ],
+        "id": "e779ddfe-844d-43f0-a0ca-c45eb5397364",
+        "name": "Resolve Tags",
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "c1",
+                "leftValue": "={{ $json.needsCreation }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          1040,
+          1008
+        ],
+        "id": "f2d36064-ffc9-4fcc-8180-0b6fe5f2976c",
+        "name": "Tag Needs Creation?",
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "resource": "tag",
+          "name": "={{ $json.tagName }}",
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-base.activeCampaign",
+        "typeVersion": 1,
+        "position": [
+          1280,
+          912
+        ],
+        "id": "c5205ed9-0731-48a9-b6e3-84dfb5f2a447",
+        "name": "Create Tag in AC",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "activeCampaignApi": {
+            "id": "6hku5zrCPrTu3XHc",
+            "name": "ActiveCampaign Crewest Account"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "t1",
+                "name": "tagId",
+                "value": "={{ $json.id }}",
+                "type": "string"
+              },
+              {
+                "id": "t2",
+                "name": "contactId",
+                "value": "={{ $('Resolve Tags').item.json.contactId }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1488,
+          912
+        ],
+        "id": "a50ae478-d2e1-4d91-aae3-d85e64d1f2e4",
+        "name": "Prep Created Tag",
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "t3",
+                "name": "tagId",
+                "value": "={{ $json.tagId }}",
+                "type": "string"
+              },
+              {
+                "id": "t4",
+                "name": "contactId",
+                "value": "={{ $json.contactId }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1488,
+          1120
+        ],
+        "id": "d8a2f325-f12e-45d8-9a5e-62e0cb4639ff",
+        "name": "Prep Existing Tag",
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "resource": "contactTag",
+          "tagId": "={{ $json.tagId }}",
+          "contactId": "={{ $json.contactId }}"
+        },
+        "type": "n8n-nodes-base.activeCampaign",
+        "typeVersion": 1,
+        "position": [
+          1680,
+          1008
+        ],
+        "id": "3265af7c-433d-4fea-9050-5154b6f7c28a",
+        "name": "Add Tag to Contact",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000,
+        "credentials": {
+          "activeCampaignApi": {
+            "id": "6hku5zrCPrTu3XHc",
+            "name": "ActiveCampaign Crewest Account"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          1888,
+          1008
+        ],
+        "id": "6d0d6b46-a139-491d-94b8-875ec8a3f224",
+        "name": "END"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Normalize Fields by Key",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Detect Artworks": {
+        "main": [
+          [
+            {
+              "node": "Split Out Artworks",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Search For Existing Artists": {
+        "main": [
+          [
+            {
+              "node": "Create or update Artist record",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create or update Artist record": {
+        "main": [
+          [
+            {
+              "node": "Detect Artworks",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Out Artworks": {
+        "main": [
+          [
+            {
+              "node": "Create or update Artworks",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Aggregate Success IDs": {
+        "main": [
+          [
+            {
+              "node": "Prepare Submission Log Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Submission Log Data": {
+        "main": [
+          [
+            {
+              "node": "Update Import Log",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create or update Artworks": {
+        "main": [
+          [
+            {
+              "node": "Aggregate Success IDs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update Import Log": {
+        "main": [
+          [
+            {
+              "node": "Success?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Success?": {
+        "main": [
+          [
+            {
+              "node": "Update Artist Status to Pending",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Capture Artist & Campaign Data": {
+        "main": [
+          [
+            {
+              "node": "Search Existing Campaigns",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Search Existing Campaigns": {
+        "main": [
+          [
+            {
+              "node": "Create or update Campaign",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create or update Campaign": {
+        "main": [
+          [
+            {
+              "node": "Search For Existing Artists",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Normalize Fields by Key": {
+        "main": [
+          [
+            {
+              "node": "Capture Artist & Campaign Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update Artist Status to Pending": {
+        "main": [
+          [
+            {
+              "node": "Get Campaign Email Info2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Campaign Email Info2": {
+        "main": [
+          [
+            {
+              "node": "Notification Email Prep for Admins and Submitter",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Notification Email Prep for Admins and Submitter": {
+        "main": [
+          [
+            {
+              "node": "AI Email Beautifier",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "AI Email Beautifier": {
+        "main": [
+          [
+            {
+              "node": "Send Admin Notification",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI GPT-4o": {
+        "main": [],
+        "ai_languageModel": [
+          [
+            {
+              "node": "AI Email Beautifier",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Email HTML Parser": {
+        "main": [],
+        "ai_outputParser": [
+          [
+            {
+              "node": "AI Email Beautifier",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create a contact": {
+        "main": [
+          [
+            {
+              "node": "Extract AC List IDs To Add To",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send Admin Notification": {
+        "main": [
+          [
+            {
+              "node": "Prep Active Campaign",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prep Active Campaign": {
+        "main": [
+          [
+            {
+              "node": "Create a contact",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract AC List IDs To Add To": {
+        "main": [
+          [
+            {
+              "node": "Add a contact to lists",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Add a contact to lists": {
+        "main": [
+          [
+            {
+              "node": "Aggregate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Aggregate": {
+        "main": [
+          [
+            {
+              "node": "Get All AC Tags",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get All AC Tags": {
+        "main": [
+          [
+            {
+              "node": "Extract Tags to Add to AC1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract Tags to Add to AC1": {
+        "main": [
+          [
+            {
+              "node": "Resolve Tags",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Resolve Tags": {
+        "main": [
+          [
+            {
+              "node": "Tag Needs Creation?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tag Needs Creation?": {
+        "main": [
+          [
+            {
+              "node": "Create Tag in AC",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Prep Existing Tag",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create Tag in AC": {
+        "main": [
+          [
+            {
+              "node": "Prep Created Tag",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prep Created Tag": {
+        "main": [
+          [
+            {
+              "node": "Add Tag to Contact",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prep Existing Tag": {
+        "main": [
+          [
+            {
+              "node": "Add Tag to Contact",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Add Tag to Contact": {
+        "main": [
+          [
+            {
+              "node": "END",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Juergen Berkessel",
+    "name": "Version 647a2b21",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-06T04:39:19.626Z",
+        "id": 451,
+        "workflowId": "QtP1J9Fwr5SPRG0u",
+        "versionId": "647a2b21-5617-410a-9378-88134e172d22",
+        "event": "activated",
+        "userId": "da4775ed-a702-491e-a3ea-7b78e706ebf2"
+      }
+    ]
+  }
+}
