@@ -16,7 +16,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 | # | Name | ID | Status | Purpose |
 |---|------|----|--------|---------|
 | 1 | **Intake V1.0** | `QtP1J9Fwr5SPRG0u` | Active | Webhook → normalize → upsert Campaign/Artist/Artworks → email notification → ActiveCampaign CRM |
-| 2 | **Enrichment V0.7** | `3c8WbVLT83fwnF2CaKIRz` | Active | Pre-process → artist research (Perplexity) → AI citation validation → profile formatting (GPT-4.1) → artwork image classification (GPT-4o) |
+| 2 | **Enrichment V0.8** | `3c8WbVLT83fwnF2CaKIRz` | Active | Pre-process → artist research (Perplexity) → AI citation validation → bio quality evaluation → profile formatting (GPT-4.1) → artwork image classification (GPT-4o) with pipeline progress tracking |
 | 3 | **Error Handler V1.0** | `iAGcwyumKEOc83kj` | Inactive | Error trigger → lookup campaign admins → Gmail notification |
 | old | **Intake V0.9** | `3TYwN_RyYT1P_vvwj-Kh1` | Inactive | Deprecated — do not use |
 
@@ -30,14 +30,16 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 | Table | ID | Key Fields |
 |-------|----|------------|
 | **Artists** | `tblZZS5EeWmxmyCTB` | Full Name, First Name, Last Name, Bio, Artist Statement, City, State, Website, Instagram/Facebook/Twitter/LinkedIn/Pinterest URLs, Primary Address, Status, Artist Profile (AI), AI Tags, Artist Summary (AI), Artworks (linked) |
-| **Artworks** | `tblh3npWVZgkWSILm` | Piece Name, Type, Medium, Subject Matter, Description, Piece Image URLs, Status, Medium (AI), Subject Matter (AI), Tags (AI) |
+| **Artworks** | `tblh3npWVZgkWSILm` | Piece Name, Type, Medium, Subject Matter, Description, Piece Image URLs, Status, Status (from Artist) (Lookup), Medium (AI), Subject Matter (AI), Tags (AI) |
+| **Pipeline Actions** | `tblPLE3Kt16Blqsjr` | Action Name, Status, Current Phase, Progress Summary, Current Record, Est. Time Remaining |
+| **Pipeline Runs** | `tblhF8aI7tf2wPWyo` | Run ID, Workflow, Status, Started At, Completed At, Artists Processed, Artworks Processed, Error Details |
 | **Campaigns** | (see Intake workflow) | Campaign name, admin emails |
 | **Import Log** | (see Intake workflow) | Submission tracking |
 
 ### Status Flow
 
 - **Artists:** `Pending - Imported` → `Pending - Enriched` → (human review)
-- **Artworks:** (created during intake) → `Pending - Enriched` (after image classification)
+- **Artworks:** (created during intake) → `Pending - Enriched` (after image classification). Artworks inherit artist eligibility via `Status (from Artist)` Lookup field — only artworks whose artist is "Pending - Enriched" are classified.
 
 ---
 
@@ -61,7 +63,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 
 ---
 
-## Workflow 2: Enrichment V0.7 — Detail
+## Workflow 2: Enrichment V0.8 — Detail
 
 **Trigger:** Webhook (`54ac3b7a-0479-4fa6-8965-204cd34addae`)
 
@@ -84,33 +86,54 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
    - AI-powered citation validator (replaced V0.6 Code node string matching)
    - Evaluates each Perplexity citation URL against artist identity context (email domain, website domain, location)
    - Rejects links about wrong people with same name, people-search sites, unrelated domains
-   - Output schema: `{verified_citations: string[], removed_count: number, validation_notes: string, research_message: string}`
+   - Output schema: `{verified_citations: string[], removed_count: number, validation_notes: string}`
    - Cost: ~$0.001 per artist (GPT-4o-mini)
-6. **Artist Profile Formatter** — GPT-4.1 Agent (temp 0.2, max 4000 tokens)
-   - Takes validated citations + research text from Validate Citations output
+6. **Bio Quality Evaluator** — Basic LLM Chain (GPT-4o-mini, temp 0.1) + Structured Output Parser
+   - Evaluates formatted profile quality (coherence, completeness, factual consistency)
+   - Flags profiles that need human review vs. auto-approval
+   - Output: `{quality_score: number, passes_quality: boolean, issues: string[]}`
+7. **Artist Profile Formatter** — GPT-4.1 Agent (temp 0.2, max 4000 tokens)
+   - Takes validated citations + research text directly from Artist Profile Researcher (`$('Artist Profile Researcher').item.json.message`)
    - References Pre-Process Submission for bio/statement (uses original, not gibberish-flagged versions)
    - **JSON Schema strict mode** enabled on LLM — guarantees valid JSON at API level
    - Outputs: formatted_profile (markdown), word_count, sections_included, key_links, social_media_profiles, tags, summary
    - Structured Output Parser with GPT-4.1 (temp 0.3) as safety net
    - Error handling: `onError: continueErrorOutput` → retries from Perplexity on failure
-7. Update Artist Record in Airtable (profile, tags, summary, status → "Pending - Enriched")
-8. **Rate Limit Delay** (`Wait`, 30 seconds) between each artist
+8. Update Artist Record in Airtable (profile, tags, summary, status → "Pending - Enriched")
+9. **Rate Limit Delay** (`Wait`, 30 seconds) between each artist
+
+### Pipeline Progress Tracking (V0.8)
+- **Prepare Run Metadata** → **Create Pipeline Run** → **Set Action Running** → **Restore Artist Data** before entering artist loop
+- **Artist Progress** → **Update Action (Artist)** after each artist enrichment (shows artist name, progress %)
+- **Artworks Transition** → **Update Action (Artworks Phase)** when entering artwork phase (shows artwork count, ETA)
+- **Artwork Progress** → **Update Action (Artwork)** after each artwork classification
+- **Finalize Run** → **Complete Pipeline Run** → **Reset Action Status** after all processing
 
 ### Part B: Artwork Enrichment
-9. Find Related Artworks (linked from enriched artist)
-10. **Loop Over Artworks** (`SplitInBatches`, batch size 1) — sequential processing
-11. **Artwork Image Classifier** — GPT-4o Vision Agent (temp 0.3, max 2000 tokens)
+10. Find Related Artworks — Airtable search: `AND({Status} = "Pending - Imported", {Status (from Artist)} = "Pending - Enriched")`
+    - Uses `Status (from Artist)` Lookup field to gate artwork classification behind artist approval
+    - Artworks belonging to "Needs Review" artists are excluded
+11. **Loop Over Artworks** (`SplitInBatches`, batch size 1) — sequential processing
+12. **Artwork Image Classifier** — GPT-4o Vision Agent (temp 0.3, max 2000 tokens)
     - Analyzes artwork image URL
     - Outputs: tags (comma-separated), subject_matter (description), detected_medium
     - Artwork Output Parser with GPT-4.1-mini
-12. Update Artwork record (tags, subject matter, medium, status → "Pending - Enriched")
-13. **Artwork Rate Limit Delay** (`Wait`, 5 seconds) between each artwork
+13. Update Artwork record (tags, subject matter, medium, status → "Pending - Enriched")
+14. **Artwork Rate Limit Delay** (`Wait`, 5 seconds) between each artwork
 
 ### Known Issues
-- "Find Related Artworks" has a pre-existing expression validation error (template literal `${}` syntax)
 - "Pre-Process Submission" Code node triggers MCP validator false positive ("Cannot return primitive values") — valid Code node v2 syntax, works at runtime
 
 ### Changelog
+- **V0.8 (2026-03-10):** Pipeline operations hub + major bug fixes:
+  - Added 13 pipeline progress tracking nodes (Prepare Run Metadata, Create Pipeline Run, Set Action Running, Restore Artist Data, Artist Progress, Update Action (Artist), Artworks Transition, Update Action (Artworks Phase), Artwork Progress, Update Action (Artwork), Finalize Run, Complete Pipeline Run, Reset Action Status)
+  - Added Bio Quality Evaluator chain (GPT-4o-mini) between Formatter and Update Artist Record
+  - Fixed Find Related Artworks: replaced broken template literal `${}` filter with Airtable formula, added `Status (from Artist)` Lookup field gating
+  - Fixed Citation Validator: removed `research_message` field from schema (caused JSON overflow with large citation sets), Formatter now references `$('Artist Profile Researcher').item.json.message` directly
+  - Fixed artwork ID pollution: Update record now uses `$('Find Related Artworks').item.json.id` instead of polluted `$('Any Valid Artworks Found?').item.json.id`
+  - Fixed optional chaining `?.` in Update Action (Artworks Phase) — replaced with `(|| {})` fallback pattern
+  - Current Record fields now display artist/artwork names instead of empty strings
+  - Added Pipeline Actions and Pipeline Runs Airtable tables for control panel integration
 - **V0.7 (2026-03-09):** Smart citation validation — added Pre-Process Submission node (gibberish detection, identity anchor extraction, data quality scoring), improved Perplexity prompt (email domain search, disambiguation rules, conditional bio/statement), replaced Validate Citations Code node with AI-powered Basic LLM Chain (GPT-4o-mini) that evaluates each citation against artist identity context, updated Formatter to reference new output structure
 - **V0.6 (2026-03-09):** Research quality fix — switched Perplexity back from `sonar-pro` to `sonar-deep-research` (sonar-pro was hallucinating citations, e.g. Yayoi Kusama links for unrelated artists), added Validate Citations Code node between researcher and formatter, cleaned up Perplexity prompt (removed fake `<Tools>` section, added citation accuracy constraints, primacy/recency), increased rate limit delay 15s→30s, increased retry wait 15s→30s
 - **V0.5 (2026-03-09):** Reliability overhaul — enabled OpenAI JSON Schema strict mode on formatter LLM, restructured formatter system prompt (AI Prompt Architecture: XML tags, primacy/recency, self-check), removed `minItems` schema constraints, reduced formatter temperature 0.4→0.2, added error handling (retry from Perplexity on failure), added artwork SplitInBatches loop, renamed "GPT-4o-mini" → "GPT-4.1 Formatter"
@@ -124,6 +147,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 |------|-------|---------|
 | Artist Profile Researcher | Perplexity `sonar-deep-research` | Web research |
 | Validate Citations (GPT-4o-mini Validator) | GPT-4o-mini (temp 0.1) | Citation verification against identity anchors |
+| Bio Quality Evaluator (Quality Check Model) | GPT-4o-mini (temp 0.1) | Profile quality evaluation |
 | Artist Profile Formatter (GPT-4.1 Formatter) | GPT-4.1 (temp 0.2, JSON Schema strict mode) | Profile formatting |
 | Structured Output Parser | GPT-4.1 (temp 0.3) | JSON extraction |
 | AI Email Beautifier | GPT-4o | Email HTML generation |
