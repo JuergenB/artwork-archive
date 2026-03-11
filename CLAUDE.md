@@ -33,7 +33,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 | **Artworks** | `tblh3npWVZgkWSILm` | Piece Name, Type, Medium, Subject Matter, Description, Piece Image URLs, Status, Status (from Artist) (Lookup), Medium (AI), Subject Matter (AI), Tags (AI) |
 | **Pipeline Actions** | `tblPLE3Kt16Blqsjr` | Action Name, Status, Current Phase, Progress Summary, Current Record, Est. Time Remaining |
 | **Pipeline Runs** | `tblhF8aI7tf2wPWyo` | Run ID, Workflow, Status, Started At, Completed At, Artists Processed, Artworks Processed, Error Details |
-| **Campaigns** | (see Intake workflow) | Campaign name, admin emails |
+| **Campaigns** | `tblr0oR74rtvR6LN2` | Campaign Name, Campaign Descriptions, Campaign Logo, Campaign Contact Emails, Admin/Submitter Notification templates, Active Campaign Lists/Tags, Embed Code (formula), Exhibition URL, Artists (linked), Artworks (linked) |
 | **Import Log** | (see Intake workflow) | Submission tracking |
 
 ### Status Flow
@@ -136,6 +136,12 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 - "Pre-Process Submission" Code node triggers MCP validator false positive ("Cannot return primitive values") — valid Code node v2 syntax, works at runtime
 
 ### Changelog
+- **V0.8.1 (2026-03-11):** Critical paired item tracking fix (#55):
+  - Fixed `Restore Artist Data` Code node — missing `pairedItem: { item: index }` caused all downstream `$('Find Pending Artists').item.json` references to resolve to item 0, silently updating the wrong Airtable record in multi-artist batches
+  - Fixed `Artworks Transition` Code node — same missing `pairedItem` pattern
+  - Changed `Update Artist Record` id expression from `$('Find Pending Artists')` to `$('Pre-Process Submission')` (defensive — references in-loop node)
+  - Changed `Artist Progress` name reference from `$('Find Pending Artists')` to `$('Pre-Process Submission')`
+  - Full Code node audit: 12 nodes across both workflows reviewed, 2 pairedItem bugs found and fixed, 4 nodes flagged for future replacement with native nodes
 - **V0.8 (2026-03-10):** Pipeline operations hub + major bug fixes:
   - Added 13 pipeline progress tracking nodes (Prepare Run Metadata, Create Pipeline Run, Set Action Running, Restore Artist Data, Artist Progress, Update Action (Artist), Artworks Transition, Update Action (Artworks Phase), Artwork Progress, Update Action (Artwork), Finalize Run, Complete Pipeline Run, Reset Action Status)
   - Added Bio Quality Evaluator chain (GPT-4o-mini) between Formatter and Update Artist Record
@@ -194,11 +200,16 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
    - **Connection params:** Use `source`/`target` (node names), NOT `from`/`to` or `fromId`/`toId`
    - **Multi-output nodes (SplitInBatches, IF, Switch):** Use `sourceIndex` to select output. SplitInBatches: output 0 = "done" (post-loop), output 1 = "loop" (inside loop body)
    - **Fixing broken AI sub-nodes:** Always follow this sequence: `removeNode` → `cleanStaleConnections` → `addNode` + `addConnection` in one atomic call. Never just remove and re-add without cleaning stale refs first.
-6. **Node selection hierarchy.** When building or modifying workflows, prefer in this order:
-   - Native n8n nodes (Airtable, Gmail, HTTP Request, etc.)
-   - AI Agent nodes with tools (for tasks requiring intelligence)
-   - Edit Fields / Set nodes (for data transformation)
-   - Code nodes (JavaScript/Python) only as last resort when no native node can do the job
+6. **Code nodes require explicit user approval.** Code nodes break n8n's automatic paired item tracking, which can cause silent data corruption (e.g., updating the wrong Airtable record in a loop — see V0.8.1 bug fix). Native nodes handle item tracking automatically. **During design/planning, every proposed Code node must be explicitly justified and approved by the user before implementation.** Do not default to Code nodes for data transformation, field mapping, or conditional logic — native nodes (Edit Fields, Set, IF, Switch, etc.) handle these cases.
+   - **Always use** native n8n nodes first (Airtable, Gmail, HTTP Request, Edit Fields, Set, IF, Switch, etc.)
+   - **AI Agent / LLM Chain nodes** for tasks requiring intelligence
+   - **Edit Fields / Set nodes** for data transformation (NOT Code nodes)
+   - **Code nodes ONLY when no native node can do the job** — must justify in the plan why a native alternative won't work, and get user sign-off
+   - **When a Code node is approved:**
+     - Always include `pairedItem: { item: index }` when returning arrays
+     - Never use `$('UpstreamNode').all()` to reconstruct data that could flow through native nodes instead
+     - Document WHY a Code node is necessary in a sticky note on the workflow canvas
+   - **When a Code node exists in a data path:** downstream nodes should reference the nearest in-loop node (e.g., `$('Pre-Process Submission')`) rather than nodes upstream of the Code node (e.g., `$('Find Pending Artists')`), as a defensive measure against broken item tracking
 7. **Show architecture before building.** Before creating or significantly restructuring a workflow, describe the planned node layout and connections to the user for approval.
 8. **AI Agent workflows.** When configuring AI Agent nodes:
    - Run `tools_documentation({topic: "ai_agents_guide"})` for the full reference
