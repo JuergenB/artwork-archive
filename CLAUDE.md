@@ -15,7 +15,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 
 | # | Name | ID | Status | Purpose |
 |---|------|----|--------|---------|
-| 1 | **Intake V1.2** | `QtP1J9Fwr5SPRG0u` | Active | Webhook → normalize → upsert Campaign/Artist/Artworks → email notification → ActiveCampaign CRM |
+| 1 | **Intake V1.3** | `QtP1J9Fwr5SPRG0u` | Active | Webhook → normalize → upsert Campaign/Artist/Artworks → email notification → ActiveCampaign CRM |
 | 2 | **Enrichment V0.8** | `3c8WbVLT83fwnF2CaKIRz` | Active | Pre-process → artist research (Perplexity) → AI citation validation → bio quality evaluation → profile formatting (GPT-4.1) → artwork image classification (GPT-4o) with pipeline progress tracking |
 | 3 | **Error Handler V1.0** | `iAGcwyumKEOc83kj` | Inactive | Error trigger → lookup campaign admins → Gmail notification |
 | old | **Intake V0.9** | `3TYwN_RyYT1P_vvwj-Kh1` | Inactive | Deprecated — do not use |
@@ -43,7 +43,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 
 ---
 
-## Workflow 1: Intake V1.1 — Detail
+## Workflow 1: Intake V1.3 — Detail
 
 **Trigger:** Webhook (receives form submission data)
 
@@ -67,7 +67,8 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 **Integrations:** Airtable, Gmail, ActiveCampaign, OpenAI (GPT-4o)
 
 ### Changelog
-- **V1.2 (2026-03-11):** Restored branded email styling — rewrote AI Email Beautifier prompt with explicit design system (dark navy `#1a1a2e` header, `#040404` buttons, 600px max-width, card-based sections, inline CSS only, table-based layout for Outlook compatibility). Previous prompt was minimal ("You are an expert email designer") with no styling constraints, producing inconsistent generic output.
+- **V1.3 (2026-03-11):** Fixed campaign link overwrite bug (#52) — Artist upsert now appends new campaign to existing Campaigns linked-record array instead of replacing. Uses `.concat()` + `.filter()` for deduplication. Also added Airtable view ID `viwi8J1HtVO5cCMJY` to record URLs in email templates.
+- **V1.2 (2026-03-11):** Restored branded email styling — rewrote AI Email Beautifier prompt with explicit design system (dark `#010101` header, `#040404` buttons, 600px max-width, card-based sections, inline CSS only, table-based layout for Outlook compatibility). Previous prompt was minimal ("You are an expert email designer") with no styling constraints, producing inconsistent generic output.
 - **V1.1 (2026-03-10):** Fixed email placeholder resolution — added 6 missing `.replaceAll()` calls to Notification Email Prep Set node (artist_email, submission_id, submission_date, artwork_count, airtable_record_url, paperform_submission_url). Also added all 9 placeholder replacements to submitter template fields (previously only resolved campaign_name). All using native Set node expressions — no Code nodes.
 - **V1.0 (2026-03-09):** Initial stable release
 
