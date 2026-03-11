@@ -1,7 +1,19 @@
 # Phase B: Operations Hub — Admin Panel & Process Monitoring
 
-> **Status:** Planned
-> **Last Updated:** 2026-03-09
+> **Status:** Complete
+> **Last Updated:** 2026-03-11
+>
+> ### What was delivered
+> - **Pipeline Actions table** (`tblPLE3Kt16Blqsjr`) — drives the Airtable Interface with live progress
+> - **Pipeline Runs table** (`tblhF8aI7tf2wPWyo`) — stores historical audit logs per execution
+> - **13 pipeline tracking nodes** in Enrichment V0.8 — run start, per-artist progress, artwork phase transition, per-artwork progress, and run completion
+> - **Documentation** updated in CLAUDE.md (table IDs, V0.8 changelog, pipeline tracking section) and MEMORY.md
+> - **Production validated** — pipeline has been processing real submissions since 2026-03-10
+>
+> ### What remains (not Phase B scope)
+> - **Airtable Interface panels** — Dashboard, Pipeline Runs, Actions, Error Review must be built manually in Interface Designer (no API)
+> - **Export Logs enhancements** — moved to Phase C (#54)
+> - **"Retry Failed Enrichments" action** — deferred to Phase D
 
 ---
 
