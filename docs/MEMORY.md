@@ -8,7 +8,7 @@
 
 ## Workflows
 - **Intake V1.4** (`QtP1J9Fwr5SPRG0u`) — Active, updated 2026-03-12 (fixed broken $json references in Notification Email Prep — 4 fields undefined, emails not sent)
-- **Enrichment V0.8.1** (`3c8WbVLT83fwnF2CaKIRz`) — Active, last modified 2026-03-11 (fixed pairedItem tracking bug #55, Artworks Transition pairedItem fix, full Code node audit)
+- **Enrichment V0.9** (`3c8WbVLT83fwnF2CaKIRz`) — Active, last modified 2026-03-12 (Artwork Image Classifier anti-hallucination rewrite #60 — image-first prompt architecture)
 - **Error Handler V1.0** (`iAGcwyumKEOc83kj`) — Inactive
 
 ## Key Decisions
@@ -17,7 +17,8 @@
 - **Pre-process submission**: Code node detects gibberish (lorem ipsum), extracts identity anchors, computes data quality score (0-10). Added in V0.7 to handle common names + poor submissions.
 - **AI Prompt Architecture**: XML tags, primacy/recency for constraints, self-check verification (per global CLAUDE.md rules)
 - **Formatter model**: GPT-4.1 with JSON Schema strict mode, temp 0.2
-- **Artwork classifier**: GPT-4o Vision, temp 0.3
+- **Artwork classifier**: GPT-4o Vision, temp 0.3, image-first prompt architecture (V0.9 — image URL before metadata to prevent hallucination from titles/descriptions)
+- **Relevance Hypothesis (AI)**: Planned (#61) — GPT-4o-mini text chain after classifier, hypothesizes artwork-to-exhibition theme connection. Skips output for generic exhibitions (no theme). Separate field from visual description.
 - **Email brand design system**: AI Email Beautifier prompt specifies: header `#010101` (near-black, neutral for multi-brand logos), buttons `#040404`, 600px max-width, card-based sections, inline CSS only, table layout for Outlook. Added V1.2.
 - **Airtable linked record append pattern**: When upserting linked records (e.g., Campaigns on Artist), must concat existing array + new ID and deduplicate. Expression: `($('SearchNode').item.json.Field || []).concat([newId]).filter(function(v,i,a){return a.indexOf(v)===i})`. Fixed in V1.3 (#52).
 - **Code node audit (2026-03-11)**: 12 Code nodes across both workflows reviewed. Findings: 4 justified (Pre-Process Submission, Normalize Fields by Key, Detect Artworks, Resolve Tags), 4 need staticData so must stay as Code (Artist Progress, Artwork Progress, Finalize Run, Prepare Run Metadata — though Prepare Run Metadata is replaceable with Set), 3 replaceable with native nodes (Extract AC List IDs, Extract Tags to Add, Restore Artist Data via architecture change). 2 pairedItem bugs found and fixed. See #55.

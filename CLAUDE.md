@@ -16,7 +16,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 | # | Name | ID | Status | Purpose |
 |---|------|----|--------|---------|
 | 1 | **Intake V1.4** | `QtP1J9Fwr5SPRG0u` | Active | Webhook → normalize → upsert Campaign/Artist/Artworks → email notification → ActiveCampaign CRM |
-| 2 | **Enrichment V0.8** | `3c8WbVLT83fwnF2CaKIRz` | Active | Pre-process → artist research (Perplexity) → AI citation validation → bio quality evaluation → profile formatting (GPT-4.1) → artwork image classification (GPT-4o) with pipeline progress tracking |
+| 2 | **Enrichment V0.9** | `3c8WbVLT83fwnF2CaKIRz` | Active | Pre-process → artist research (Perplexity) → AI citation validation → bio quality evaluation → profile formatting (GPT-4.1) → artwork image classification (GPT-4o) with pipeline progress tracking |
 | 3 | **Error Handler V1.0** | `iAGcwyumKEOc83kj` | Inactive | Error trigger → lookup campaign admins → Gmail notification |
 | old | **Intake V0.9** | `3TYwN_RyYT1P_vvwj-Kh1` | Inactive | Deprecated — do not use |
 
@@ -127,7 +127,9 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
     - Artworks belonging to "Needs Review" artists are excluded
 11. **Loop Over Artworks** (`SplitInBatches`, batch size 1) — sequential processing
 12. **Artwork Image Classifier** — GPT-4o Vision Agent (temp 0.3, max 2000 tokens)
-    - Analyzes artwork image URL
+    - Image-first prompt architecture: image URL sent before metadata to prevent hallucination
+    - System prompt with `<critical_constraint>`, `<analysis_protocol>`, `<output_requirements>`, `<anti_hallucination_rules>` XML sections
+    - Metadata (title, artist description) provided as "optional context" after image analysis
     - Outputs: tags (comma-separated), subject_matter (description), detected_medium
     - Artwork Output Parser with GPT-4.1-mini
 13. Update Artwork record (tags, subject matter, medium, status → "Pending - Enriched")
@@ -137,6 +139,12 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 - "Pre-Process Submission" Code node triggers MCP validator false positive ("Cannot return primitive values") — valid Code node v2 syntax, works at runtime
 
 ### Changelog
+- **V0.9 (2026-03-12):** Artwork Image Classifier anti-hallucination rewrite (#60):
+  - Complete prompt rewrite: image-first architecture — image URL sent before metadata to prevent vision model anchoring on text
+  - Added `<critical_constraint>` section: "DESCRIBE ONLY WHAT IS VISIBLE IN THE IMAGE"
+  - Added `<anti_hallucination_rules>`: explicit rules against inferring visual content from title/description
+  - Metadata (title, artist description) now provided as "optional context" after image, not before
+  - Root cause: AI described "coastal landscape with clear blue waters" for an image of a bed with white linens because title was "Corfu, Greece"
 - **V0.8.1 (2026-03-11):** Critical paired item tracking fix (#55):
   - Fixed `Restore Artist Data` Code node — missing `pairedItem: { item: index }` caused all downstream `$('Find Pending Artists').item.json` references to resolve to item 0, silently updating the wrong Airtable record in multi-artist batches
   - Fixed `Artworks Transition` Code node — same missing `pairedItem` pattern
