@@ -185,6 +185,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 | Structured Output Parser | GPT-4.1 (temp 0.3) | JSON extraction |
 | AI Email Beautifier | GPT-4o | Email HTML generation |
 | Artwork Image Classifier | GPT-4o | Vision-based artwork analysis |
+| Relevance Hypothesis (Relevance Model) | GPT-4o-mini (temp 0.3) | Artwork-to-exhibition theme connection |
 | Artwork Output Parser | GPT-4.1-mini | JSON extraction |
 
 ---
