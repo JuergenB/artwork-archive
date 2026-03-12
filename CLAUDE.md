@@ -139,8 +139,11 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 - "Pre-Process Submission" Code node triggers MCP validator false positive ("Cannot return primitive values") — valid Code node v2 syntax, works at runtime
 
 ### Changelog
-- **V0.9 (2026-03-12):** Artwork Image Classifier anti-hallucination rewrite (#60):
-  - Complete prompt rewrite: image-first architecture — image URL sent before metadata to prevent vision model anchoring on text
+- **V0.9 (2026-03-12):** Artwork Image Classifier anti-hallucination rewrite (#60) + skip-artists path fix (#62):
+  - Wired `Implement "Skip Artists and Go Straight to Artworks"` NoOp → `Find Related Artworks` — artworks now process even when no artists are pending
+  - Added try/catch to Artworks Transition, Artwork Progress, Finalize Run for graceful fallback when `$('Restore Artist Data')` hasn't executed (skip-artists path)
+  - Set `onError: continueRegularOutput` on Complete Pipeline Run for empty `_runRecordId` path
+  - Complete classifier prompt rewrite: image-first architecture — image URL sent before metadata to prevent vision model anchoring on text
   - Added `<critical_constraint>` section: "DESCRIBE ONLY WHAT IS VISIBLE IN THE IMAGE"
   - Added `<anti_hallucination_rules>`: explicit rules against inferring visual content from title/description
   - Metadata (title, artist description) now provided as "optional context" after image, not before
