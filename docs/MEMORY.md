@@ -7,7 +7,7 @@
 - Airtable PAT stored in project `.env`
 
 ## Workflows
-- **Intake V1.3** (`QtP1J9Fwr5SPRG0u`) — Active, updated 2026-03-11 (fixed campaign link overwrite bug #52, branded email styling V1.2)
+- **Intake V1.4** (`QtP1J9Fwr5SPRG0u`) — Active, updated 2026-03-12 (fixed broken $json references in Notification Email Prep — 4 fields undefined, emails not sent)
 - **Enrichment V0.8.1** (`3c8WbVLT83fwnF2CaKIRz`) — Active, last modified 2026-03-11 (fixed pairedItem tracking bug #55, Artworks Transition pairedItem fix, full Code node audit)
 - **Error Handler V1.0** (`iAGcwyumKEOc83kj`) — Inactive
 
@@ -44,6 +44,7 @@
 - **Do not trigger n8n workflow executions** unless the user explicitly asks. Double-triggering wastes API tokens (Perplexity, GPT) and creates race conditions.
 
 ## Gotchas
+- **Never use `$json` in n8n expressions (CRITICAL)**: Always use `$('NodeName').item.json['field']`. The `$json` shorthand assumes data from the immediately preceding node — silently breaks when nodes are reordered or inserted. Caused production email failure in Intake V1.4 (4 fields resolved to `undefined`, admin notifications not sent). Only acceptable inside Code node JavaScript, never in expression fields.
 - **Code node pairedItem (CRITICAL)**: Code nodes that return arrays using `.map()` MUST include `pairedItem: { item: index }`. Without it, n8n defaults all items to `pairedItem: {item: 0}`, causing all downstream `$('UpstreamNode').item.json` references to resolve to item 0 regardless of loop iteration. This caused silent wrong-record updates in V0.8 (#55). Downstream nodes should reference the nearest in-loop node, not nodes upstream of any Code node.
 - n8n MCP validator false positives: `$('NodeName')` and `$input.item.json` are valid Code node v2 syntax
 - n8n MCP `updateNode`: must use `nodeId` (UUID), not `name` or `id` — name resolution silently fails

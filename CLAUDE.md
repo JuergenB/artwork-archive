@@ -15,7 +15,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 
 | # | Name | ID | Status | Purpose |
 |---|------|----|--------|---------|
-| 1 | **Intake V1.3** | `QtP1J9Fwr5SPRG0u` | Active | Webhook → normalize → upsert Campaign/Artist/Artworks → email notification → ActiveCampaign CRM |
+| 1 | **Intake V1.4** | `QtP1J9Fwr5SPRG0u` | Active | Webhook → normalize → upsert Campaign/Artist/Artworks → email notification → ActiveCampaign CRM |
 | 2 | **Enrichment V0.8** | `3c8WbVLT83fwnF2CaKIRz` | Active | Pre-process → artist research (Perplexity) → AI citation validation → bio quality evaluation → profile formatting (GPT-4.1) → artwork image classification (GPT-4o) with pipeline progress tracking |
 | 3 | **Error Handler V1.0** | `iAGcwyumKEOc83kj` | Inactive | Error trigger → lookup campaign admins → Gmail notification |
 | old | **Intake V0.9** | `3TYwN_RyYT1P_vvwj-Kh1` | Inactive | Deprecated — do not use |
@@ -43,7 +43,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 
 ---
 
-## Workflow 1: Intake V1.3 — Detail
+## Workflow 1: Intake V1.4 — Detail
 
 **Trigger:** Webhook (receives form submission data)
 
@@ -67,6 +67,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 **Integrations:** Airtable, Gmail, ActiveCampaign, OpenAI (GPT-4o)
 
 ### Changelog
+- **V1.4 (2026-03-12):** Fixed broken Notification Email Prep node — 8 fields were using `$json['...']` (assumes previous node) instead of explicit `$('NodeName')` references. 4 fields resolved to `undefined` (Admin Notification Email Addresses, Submitter Email Address, Campaign Logo Small/Medium), preventing admin notification emails from sending. All expressions now use explicit node references: `$('Get Campaign Email Info2')` for campaign data, `$('Normalize Fields by Key')` for submission data.
 - **V1.3 (2026-03-11):** Fixed campaign link overwrite bug (#52) — Artist upsert now appends new campaign to existing Campaigns linked-record array instead of replacing. Uses `.concat()` + `.filter()` for deduplication. Also added Airtable view ID `viwi8J1HtVO5cCMJY` to record URLs in email templates.
 - **V1.2 (2026-03-11):** Restored branded email styling — rewrote AI Email Beautifier prompt with explicit design system (dark `#010101` header, `#040404` buttons, 600px max-width, card-based sections, inline CSS only, table-based layout for Outlook compatibility). Previous prompt was minimal ("You are an expert email designer") with no styling constraints, producing inconsistent generic output.
 - **V1.1 (2026-03-10):** Fixed email placeholder resolution — added 6 missing `.replaceAll()` calls to Notification Email Prep Set node (artist_email, submission_id, submission_date, artwork_count, airtable_record_url, paperform_submission_url). Also added all 9 placeholder replacements to submitter template fields (previously only resolved campaign_name). All using native Set node expressions — no Code nodes.
@@ -179,60 +180,4 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 - **No local code** — all logic lives in n8n workflow nodes
 - **Airtable auth:** OAuth2 (configured in n8n credentials)
 - **User Timezone:** America/New_York (Eastern Time)
-- **n8n expression syntax:** `{{ $json.fieldName }}` for current node data, `{{ $node["NodeName"].json.fieldName }}` for cross-node references, `{{ $input.item.json }}` for explicit input reference
-
----
-
-## Session Rules
-
-1. **Read workflow structure before answering.** Use `n8n_get_workflow` to check current state.
-2. **Validate after changes.** Run `n8n_validate_workflow` + `n8n_autofix_workflow` after any update.
-3. **Version before modifying.** Check `n8n_workflow_versions` before changes.
-4. **Convert timestamps to ET.** n8n timestamps are UTC.
-5. **Prefer partial updates.** Use `n8n_update_partial_workflow` for surgical changes (add/remove/update nodes, rewire connections). Reserve `n8n_update_full_workflow` only for wholesale restructuring. Key patterns:
-   - `addNode` + `addConnection` in one atomic call to insert nodes into a flow
-   - `rewireConnection` to redirect edges without remove+add
-   - `branch="true"/"false"` for IF nodes, `case=N` for Switch nodes
-   - `cleanStaleConnections` after removing or renaming nodes
-   - `validateOnly: true` to preview changes before applying
-   - `continueOnError: true` for best-effort bulk cleanup
-   - Always include `intent` parameter describing the change
-   - **Connection params:** Use `source`/`target` (node names), NOT `from`/`to` or `fromId`/`toId`
-   - **Multi-output nodes (SplitInBatches, IF, Switch):** Use `sourceIndex` to select output. SplitInBatches: output 0 = "done" (post-loop), output 1 = "loop" (inside loop body)
-   - **Fixing broken AI sub-nodes:** Always follow this sequence: `removeNode` → `cleanStaleConnections` → `addNode` + `addConnection` in one atomic call. Never just remove and re-add without cleaning stale refs first.
-6. **Code nodes require explicit user approval.** Code nodes break n8n's automatic paired item tracking, which can cause silent data corruption (e.g., updating the wrong Airtable record in a loop — see V0.8.1 bug fix). Native nodes handle item tracking automatically. **During design/planning, every proposed Code node must be explicitly justified and approved by the user before implementation.** Do not default to Code nodes for data transformation, field mapping, or conditional logic — native nodes (Edit Fields, Set, IF, Switch, etc.) handle these cases.
-   - **Always use** native n8n nodes first (Airtable, Gmail, HTTP Request, Edit Fields, Set, IF, Switch, etc.)
-   - **AI Agent / LLM Chain nodes** for tasks requiring intelligence
-   - **Edit Fields / Set nodes** for data transformation (NOT Code nodes)
-   - **Code nodes ONLY when no native node can do the job** — must justify in the plan why a native alternative won't work, and get user sign-off
-   - **When a Code node is approved:**
-     - Always include `pairedItem: { item: index }` when returning arrays
-     - Never use `$('UpstreamNode').all()` to reconstruct data that could flow through native nodes instead
-     - Document WHY a Code node is necessary in a sticky note on the workflow canvas
-   - **When a Code node exists in a data path:** downstream nodes should reference the nearest in-loop node (e.g., `$('Pre-Process Submission')`) rather than nodes upstream of the Code node (e.g., `$('Find Pending Artists')`), as a defensive measure against broken item tracking
-7. **Show architecture before building.** Before creating or significantly restructuring a workflow, describe the planned node layout and connections to the user for approval.
-8. **AI Agent workflows.** When configuring AI Agent nodes:
-   - Run `tools_documentation({topic: "ai_agents_guide"})` for the full reference
-   - Use AI-specific connection types (`ai_languageModel`, `ai_tool`, `ai_memory`, `ai_outputParser`) — not `main` connections
-   - Connect the language model BEFORE enabling the AI Agent
-   - Use `sourceOutput` parameter in `addConnection` operations for AI connections
-9. **Creating OpenAI Chat Model nodes via MCP.** The `lmChatOpenAi` node requires special attention:
-   - Always use **typeVersion 1.3** (matching existing working nodes)
-   - The `model` parameter MUST be a **resource locator object**, not a plain string. Plain strings cause "Could not get parameter" at runtime. Correct format: `{"model": {"__rl": true, "value": "gpt-4o-mini", "mode": "list", "cachedResultName": "gpt-4o-mini"}}`
-   - Do NOT include `notice` parameter — it's a UI-only field that causes issues when set via API
-   - After creating nodes via MCP, verify parameter format matches existing working nodes in the workflow
-10. **n8n Code node sandbox restrictions.** The Code node v2 VM does not expose all browser/Node globals:
-    - `new URL()` is NOT available — use string manipulation (`replace(/^https?:\/\//, '')`) for URL parsing
-    - `setTimeout`, `setInterval` are NOT available
-    - `try/catch` will silently swallow ReferenceErrors from missing globals — test carefully
-11. **Airtable field completeness.** When an Airtable node uses a specific field list, always verify it includes ALL fields needed by downstream nodes. Missing fields produce empty values silently — no runtime error.
-
----
-
-## Troubleshooting
-
-- **Validation still fails after autofix:** Run `cleanStaleConnections` operation via `n8n_update_partial_workflow` to remove broken connection references. Check for branch mismatches (e.g., Switch with 3 rules but only 2 output connections).
-- **Corrupted workflow (API returns corrupt data, rejects all updates):** Cannot be fixed in place. Create a new workflow and migrate nodes from the old one.
-- **Property mutual exclusivity errors:** When migrating deprecated properties (e.g., `continueOnFail` to `onError`), remove the old property with `undefined` and set the new one in the same `updateNode` operation.
-- **"Could not get parameter" on lmChatOpenAi sub-nodes:** The `model` field must be a resource locator object (`{"__rl": true, "value": "model-name", "mode": "list"}`). Plain strings cause this error at runtime even though the node saves without complaint. Compare against working nodes with `jq` to verify format.
-- **Autofix typeVersion upgrades may not persist:** After running `n8n_autofix_workflow`, always verify the changes with `n8n_get_workflow`. TypeVersion upgrades in particular have been observed to silently revert.
+- **n8n expression rule:** Never use `$json` or `$json['field']` in expression fields. Always use `$('NodeName').item.json['field']`. The `$json` shorthand silently breaks when nodes are reordered. See V1.4 changelog.
