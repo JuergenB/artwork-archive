@@ -43,6 +43,8 @@
 - Pre-approved CLI tools: git, gh, npm, npx, node, python3, supabase, vercel, curl, jq
 - **No Code nodes without explicit approval.** Code nodes obfuscate workflow design, make maintenance harder, and break n8n's paired item tracking (V0.8.1 bug: silent wrong-record updates). Every Code node must be justified in the plan and approved by the user. Use native n8n nodes (Edit Fields, Set, IF, Switch) for data transformation. Claude's n8n MCP tendency is to default to Code nodes — actively resist this.
 - **Do not trigger n8n workflow executions** unless the user explicitly asks. Double-triggering wastes API tokens (Perplexity, GPT) and creates race conditions.
+- **Epic issues have a mixed audience.** Non-technical stakeholders (CEO, partner org leaders) read epics too. Always lead with a **Purpose** section (why we're doing this, what problem it solves) and a **What This Enables** section (concrete benefits in plain language) before any architecture or technical details. Sub-issues can be fully technical.
+- **Keep README.md current.** When creating or updating epics/sub-issues, do a relevance check on `README.md` and update it if the changes affect project scope, phases, architecture, workflows, or AI models. The repo README is the public-facing overview and must always reflect the current state of the project.
 
 ## Gotchas
 - **Never use `$json` in n8n expressions (CRITICAL)**: Always use `$('NodeName').item.json['field']`. The `$json` shorthand assumes data from the immediately preceding node — silently breaks when nodes are reordered or inserted. Caused production email failure in Intake V1.4 (4 fields resolved to `undefined`, admin notifications not sent). Only acceptable inside Code node JavaScript, never in expression fields.
