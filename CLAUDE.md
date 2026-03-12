@@ -30,7 +30,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 | Table | ID | Key Fields |
 |-------|----|------------|
 | **Artists** | `tblZZS5EeWmxmyCTB` | Full Name, First Name, Last Name, Bio, Artist Statement, City, State, Website, Instagram/Facebook/Twitter/LinkedIn/Pinterest URLs, Primary Address, Status, Artist Profile (AI), AI Tags, Artist Summary (AI), Artworks (linked) |
-| **Artworks** | `tblh3npWVZgkWSILm` | Piece Name, Type, Medium, Subject Matter, Description, Piece Image URLs, Status, Status (from Artist) (Lookup), Medium (AI), Subject Matter (AI), Tags (AI) |
+| **Artworks** | `tblh3npWVZgkWSILm` | Piece Name, Type, Medium, Subject Matter, Description, Piece Image URLs, Status, Status (from Artist) (Lookup), Medium (AI), Subject Matter (AI), Tags (AI), Relevance Hypothesis (AI), Campaign Descriptions (from Campaign) (Lookup) |
 | **Pipeline Actions** | `tblPLE3Kt16Blqsjr` | Action Name, Status, Current Phase, Progress Summary, Current Record, Est. Time Remaining |
 | **Pipeline Runs** | `tblhF8aI7tf2wPWyo` | Run ID, Workflow, Status, Started At, Completed At, Artists Processed, Artworks Processed, Error Details |
 | **Campaigns** | `tblr0oR74rtvR6LN2` | Campaign Name, Campaign Descriptions, Campaign Logo, Campaign Contact Emails, Admin/Submitter Notification templates, Active Campaign Lists/Tags, Embed Code (formula), Exhibition URL, Artists (linked), Artworks (linked) |
@@ -132,22 +132,26 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
     - Metadata (title, artist description) provided as "optional context" after image analysis
     - Outputs: tags (comma-separated), subject_matter (description), detected_medium
     - Artwork Output Parser with GPT-4.1-mini
-13. Update Artwork record (tags, subject matter, medium, status → "Pending - Enriched")
-14. **Artwork Rate Limit Delay** (`Wait`, 5 seconds) between each artwork
+    - **Fetch Artwork Image** (HTTP Request) downloads Airtable thumbnail as binary before classifier — required for GPT-4o vision (text URLs don't trigger vision)
+13. **Relevance Hypothesis** — Basic LLM Chain (GPT-4o-mini, temp 0.3)
+    - Hypothesizes how artwork connects to exhibition theme
+    - Inputs: classifier output (subject_matter, tags) + artwork context (title, description) + campaign name/description (via Lookup field)
+    - Skips output ("SKIP") for generic exhibitions with no distinctive theme
+    - Output written to `Relevance Hypothesis (AI)` field; conditional expression clears field when "SKIP"
+14. Update Artwork record (tags, subject matter, medium, relevance hypothesis, status → "Pending - Enriched")
+15. **Artwork Rate Limit Delay** (`Wait`, 5 seconds) between each artwork
 
 ### Known Issues
 - "Pre-Process Submission" Code node triggers MCP validator false positive ("Cannot return primitive values") — valid Code node v2 syntax, works at runtime
 
 ### Changelog
-- **V0.9 (2026-03-12):** Artwork Image Classifier anti-hallucination rewrite (#60) + skip-artists path fix (#62):
-  - Wired `Implement "Skip Artists and Go Straight to Artworks"` NoOp → `Find Related Artworks` — artworks now process even when no artists are pending
-  - Added try/catch to Artworks Transition, Artwork Progress, Finalize Run for graceful fallback when `$('Restore Artist Data')` hasn't executed (skip-artists path)
-  - Set `onError: continueRegularOutput` on Complete Pipeline Run for empty `_runRecordId` path
-  - Complete classifier prompt rewrite: image-first architecture — image URL sent before metadata to prevent vision model anchoring on text
-  - Added `<critical_constraint>` section: "DESCRIBE ONLY WHAT IS VISIBLE IN THE IMAGE"
-  - Added `<anti_hallucination_rules>`: explicit rules against inferring visual content from title/description
-  - Metadata (title, artist description) now provided as "optional context" after image, not before
-  - Root cause: AI described "coastal landscape with clear blue waters" for an image of a bed with white linens because title was "Corfu, Greece"
+- **V0.9 (2026-03-12):** Vision fix, skip-artists path, relevance hypothesis (#60, #61, #62):
+  - **Fetch Artwork Image** — added HTTP Request node to download Airtable thumbnail as binary before classifier. GPT-4o vision requires binary image data, not text URLs. The model had been hallucinating descriptions from metadata because it never actually saw the images.
+  - **Relevance Hypothesis** (#61) — new Basic LLM Chain (GPT-4o-mini, temp 0.3) between classifier and Update record. Hypothesizes artwork-to-exhibition theme connection. Outputs "SKIP" for generic exhibitions (no theme). New Airtable fields: `Relevance Hypothesis (AI)` (multilineText), `Campaign Descriptions (from Campaign)` (Lookup).
+  - **Skip-artists path** (#62) — wired NoOp → `Find Related Artworks` so artworks process when no artists are pending. Added try/catch to Artworks Transition, Artwork Progress, Finalize Run for `$('Restore Artist Data')` fallback. Set `onError: continueRegularOutput` on Complete Pipeline Run.
+  - **$json refs fixed** — Update record expressions changed from `$json.output.*` to `$('Artwork Image Classifier').item.json.output.*` (inserting Relevance Hypothesis node changed the upstream)
+  - Anti-hallucination prompt with `<critical_constraint>`, `<anti_hallucination_rules>` XML sections retained as safety net
+  - Root cause of hallucination: GPT-4o never saw the actual image — URL was passed as text, not binary
 - **V0.8.1 (2026-03-11):** Critical paired item tracking fix (#55):
   - Fixed `Restore Artist Data` Code node — missing `pairedItem: { item: index }` caused all downstream `$('Find Pending Artists').item.json` references to resolve to item 0, silently updating the wrong Airtable record in multi-artist batches
   - Fixed `Artworks Transition` Code node — same missing `pairedItem` pattern
