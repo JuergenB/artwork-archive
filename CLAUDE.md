@@ -34,6 +34,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 | **Pipeline Actions** | `tblPLE3Kt16Blqsjr` | Action Name, Status, Current Phase, Progress Summary, Current Record, Est. Time Remaining |
 | **Pipeline Runs** | `tblhF8aI7tf2wPWyo` | Run ID, Workflow, Status, Started At, Completed At, Artists Processed, Artworks Processed, Error Details |
 | **Campaigns** | `tblr0oR74rtvR6LN2` | Campaign Name, Campaign Descriptions, Campaign Logo, Campaign Contact Emails, Admin/Submitter Notification templates, Active Campaign Lists/Tags, Embed Code (formula), Exhibition URL, Artists (linked), Artworks (linked) |
+| **Partner Organizations** | `tbl0GhG4KxfuYDKaE` | Organization Name, Partner ID (formula), Primary/Alternate Logo, Mission Statement, Contact Name/Email/Phone, Curator Name/Email/Pronouns/Headshot, Exhibition Name/Venue/Address/Open/Close, Live Exhibition, Public on Website, Status, Campaigns (linked), Artists (linked) |
 | **Import Log** | (see Intake workflow) | Submission tracking |
 
 ### Status Flow
