@@ -30,7 +30,7 @@ Paperform (online submission form)
     |
     v
 +--------------------------------------------------+
-|  n8n Cloud -- Intake V1.4                        |
+|  n8n Cloud -- Intake V1.6                        |
 |  Webhook --> Normalize --> Upsert Campaign/       |
 |  Artist/Artworks --> Email Notification -->        |
 |  ActiveCampaign CRM Sync                          |
@@ -38,7 +38,7 @@ Paperform (online submission form)
                           | Status: "Pending - Imported"
                           v
 +--------------------------------------------------+
-|  n8n Cloud -- Enrichment V0.9                    |
+|  n8n Cloud -- Enrichment V0.10                   |
 |                                                  |
 |  Part A: Artist Enrichment                       |
 |  Pre-Process --> Perplexity Deep Research -->     |
@@ -47,11 +47,22 @@ Paperform (online submission form)
 |                                                  |
 |  Part B: Artwork Enrichment                      |
 |  Fetch Image --> GPT-4o Vision Classifier -->    |
-|  Relevance Hypothesis --> Airtable Update        |
+|  Relevance Hypothesis --> Dimension Extractor --> |
+|  Airtable Update                                 |
 |                                                  |
 |  Pipeline Tracking: progress, ETA, status        |
 +-------------------------+------------------------+
                           | Status: "Pending - Enriched"
+                          v
++--------------------------------------------------+
+|  n8n Cloud -- Social Profile Discovery V1.0      |
+|  (Control Panel action — on demand)              |
+|                                                  |
+|  Firecrawl Website Scrape --> Perplexity Deep    |
+|  Research --> GPT-4.1 Validate & Merge -->        |
+|  Airtable: Social Profiles (AI)                  |
++-------------------------+------------------------+
+                          |
                           v
                    (Human Review)
                           |
@@ -60,9 +71,10 @@ Paperform (online submission form)
 ```
 
 **Infrastructure:**
-- **Workflows:** [n8n Cloud](https://n8n.io) (3 workflows)
+- **Workflows:** [n8n Cloud](https://n8n.io) (4 workflows)
 - **Database:** [Airtable](https://airtable.com) (7 tables: Artists, Artworks, Campaigns, Pipeline Actions, Pipeline Runs, Import Log, Partner Organizations)
 - **Forms:** [Paperform](https://paperform.co) (webhook integration)
+- **Web Scraping:** [Firecrawl](https://firecrawl.dev) (social link extraction from artist websites)
 - **CRM:** [ActiveCampaign](https://www.activecampaign.com)
 - **Email:** Gmail (OAuth2)
 
@@ -70,9 +82,10 @@ Paperform (online submission form)
 
 | # | Name | Version | Status | Purpose |
 |---|------|---------|--------|---------|
-| 1 | Intake | V1.4 | Active | Form submission to Airtable + email + CRM |
-| 2 | Enrichment | V0.9 | Active | AI research, citation validation, image classification, relevance hypothesis |
-| 3 | Error Handler | V1.0 | Inactive | Error notifications to campaign admins |
+| 1 | Intake | V1.6 | Active | Form submission to Airtable + email + CRM |
+| 2 | Enrichment | V0.10 | Active | AI research, citation validation, image classification, relevance hypothesis, dimension extraction |
+| 3 | Social Profile Discovery | V1.0 | Active | Find social media profiles for enriched artists via Firecrawl + Perplexity |
+| 4 | Error Handler | V1.0 | Inactive | Error notifications to campaign admins |
 
 ## AI Models
 
@@ -84,8 +97,11 @@ Paperform (online submission form)
 | Profile Formatting | GPT-4.1 (JSON Schema strict mode) | Generate structured artist profiles |
 | Artwork Classification | GPT-4o Vision | Detect medium, subject matter, tags from images |
 | Relevance Hypothesis | GPT-4o-mini | Hypothesize artwork connection to exhibition theme |
+| Dimension Extraction | GPT-4o-mini | Extract height, width, depth, unit from description text |
 | Email Generation | GPT-4o | Format branded admin notification emails |
 | Output Parsing | GPT-4.1 / GPT-4.1-mini | Structured JSON extraction (safety nets) |
+| Social Profile Search | Perplexity `sonar-deep-research` | Find social media profiles across the web |
+| Social Profile Validation | GPT-4.1 | Validate, merge, and structure discovered profiles |
 
 ## Enrichment Quality Controls
 

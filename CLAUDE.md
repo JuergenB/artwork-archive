@@ -15,9 +15,10 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 
 | # | Name | ID | Status | Purpose |
 |---|------|----|--------|---------|
-| 1 | **Intake V1.4** | `QtP1J9Fwr5SPRG0u` | Active | Webhook → normalize → upsert Campaign/Artist/Artworks → email notification → ActiveCampaign CRM |
-| 2 | **Enrichment V0.9** | `3c8WbVLT83fwnF2CaKIRz` | Active | Pre-process → artist research (Perplexity) → AI citation validation → bio quality evaluation → profile formatting (GPT-4.1) → artwork image classification (GPT-4o) with pipeline progress tracking |
-| 3 | **Error Handler V1.0** | `iAGcwyumKEOc83kj` | Inactive | Error trigger → lookup campaign admins → Gmail notification |
+| 1 | **Intake V1.6** | `QtP1J9Fwr5SPRG0u` | Active | Webhook → normalize → upsert Campaign/Artist/Artworks → email notification → ActiveCampaign CRM |
+| 2 | **Enrichment V0.10** | `3c8WbVLT83fwnF2CaKIRz` | Active | Pre-process → artist research (Perplexity) → AI citation validation → bio quality evaluation → profile formatting (GPT-4.1) → artwork image classification (GPT-4o) → dimension extraction (GPT-4o-mini) with pipeline progress tracking |
+| 3 | **Social Profile Discovery V1.0** | `mRgdgMZTjamxK6S9` | Inactive (new) | Firecrawl website scrape → Perplexity deep-research → GPT-4.1 validation → Social Profiles (AI) field |
+| 4 | **Error Handler V1.0** | `iAGcwyumKEOc83kj` | Inactive | Error trigger → lookup campaign admins → Gmail notification |
 | old | **Intake V0.9** | `3TYwN_RyYT1P_vvwj-Kh1` | Inactive | Deprecated — do not use |
 
 ## Airtable
@@ -30,11 +31,11 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 | Table | ID | Key Fields |
 |-------|----|------------|
 | **Artists** | `tblZZS5EeWmxmyCTB` | Full Name, First Name, Last Name, Bio, Artist Statement, City, State, Website, Instagram/Facebook/Twitter/LinkedIn/Pinterest URLs, Primary Address, Status, Artist Profile (AI), AI Tags, Artist Summary (AI), Artworks (linked) |
-| **Artworks** | `tblh3npWVZgkWSILm` | Piece Name, Type, Medium, Subject Matter, Description, Piece Image URLs, Status, Status (from Artist) (Lookup), Medium (AI), Subject Matter (AI), Tags (AI), Relevance Hypothesis (AI), Campaign Descriptions (from Campaign) (Lookup) |
+| **Artworks** | `tblh3npWVZgkWSILm` | Piece Name, Type, Medium, Subject Matter, Description, Piece Image URLs, Status, Status (from Artist) (Lookup), Medium (AI), Subject Matter (AI), Tags (AI), Relevance Hypothesis (AI), Height (AI), Width (AI), Depth (AI), Dimensions Unit (AI), Campaign Descriptions (from Campaign) (Lookup) |
 | **Pipeline Actions** | `tblPLE3Kt16Blqsjr` | Action Name, Status, Current Phase, Progress Summary, Current Record, Est. Time Remaining |
 | **Pipeline Runs** | `tblhF8aI7tf2wPWyo` | Run ID, Workflow, Status, Started At, Completed At, Artists Processed, Artworks Processed, Error Details |
-| **Campaigns** | `tblr0oR74rtvR6LN2` | Campaign Name, Campaign Descriptions, Campaign Logo, Campaign Contact Emails, Admin/Submitter Notification templates, Active Campaign Lists/Tags, Embed Code (formula), Exhibition URL, Artists (linked), Artworks (linked) |
-| **Partner Organizations** | `tbl0GhG4KxfuYDKaE` | Organization Name, Partner ID (formula), Primary/Alternate Logo, Mission Statement, Contact Name/Email/Phone, Curator Name/Email/Pronouns/Headshot, Exhibition Name/Venue/Address/Open/Close, Live Exhibition, Public on Website, Status, Campaigns (linked), Artists (linked) |
+| **Campaigns** | `tblr0oR74rtvR6LN2` | Campaign Name, Campaign Descriptions, Campaign Logo, Campaign Contact Emails, Admin/Submitter Notification templates, Active Campaign Lists/Tags, Embed Code (formula), Exhibition URL, Official Exhibition Name, Exhibition Venue/Address/Open/Close, Artists (linked), Artworks (linked), Partner Organizations (linked) |
+| **Partner Organizations** | `tbl0GhG4KxfuYDKaE` | Organization Name, Partner ID (formula), Primary/Alternate Logo, Mission Statement, Contact Name/Email/Phone, Curator Name/Email/Pronouns/Bio/Headshot, Live Exhibition, Public on Website, Status, Campaigns (linked), Artists (linked) |
 | **Import Log** | (see Intake workflow) | Submission tracking |
 
 ### Status Flow
@@ -44,7 +45,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 
 ---
 
-## Workflow 1: Intake V1.4 — Detail
+## Workflow 1: Intake V1.6 — Detail
 
 **Trigger:** Webhook (receives form submission data)
 
@@ -68,6 +69,8 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 **Integrations:** Airtable, Gmail, ActiveCampaign, OpenAI (GPT-4o)
 
 ### Changelog
+- **V1.6 (2026-03-16):** Dimension field renames (#72) — renamed `Height` → `Height (AI)`, `Width` → `Width (AI)`, `Depth` → `Depth (AI)` in Create or update Artworks node, matching Airtable field renames for AI-extracted dimension data.
+- **V1.5 (2026-03-13):** Partner Organizations linking (#68) — added `partner_id` field to Capture Artist & Campaign Data (extracted from `fieldsByKey.partner_id` with `|| {}` fallback). Create or update Artist record appends partner to existing Partner Organizations array (concat + dedup, same pattern as Campaigns). Create or update Artworks wraps partner_id in array. Non-partner submissions pass empty array (no link). Tested via Haywood Grad Show landing page.
 - **V1.4 (2026-03-12):** Fixed broken Notification Email Prep node — 8 fields were using `$json['...']` (assumes previous node) instead of explicit `$('NodeName')` references. 4 fields resolved to `undefined` (Admin Notification Email Addresses, Submitter Email Address, Campaign Logo Small/Medium), preventing admin notification emails from sending. All expressions now use explicit node references: `$('Get Campaign Email Info2')` for campaign data, `$('Normalize Fields by Key')` for submission data.
 - **V1.3 (2026-03-11):** Fixed campaign link overwrite bug (#52) — Artist upsert now appends new campaign to existing Campaigns linked-record array instead of replacing. Uses `.concat()` + `.filter()` for deduplication. Also added Airtable view ID `viwi8J1HtVO5cCMJY` to record URLs in email templates.
 - **V1.2 (2026-03-11):** Restored branded email styling — rewrote AI Email Beautifier prompt with explicit design system (dark `#010101` header, `#040404` buttons, 600px max-width, card-based sections, inline CSS only, table-based layout for Outlook compatibility). Previous prompt was minimal ("You are an expert email designer") with no styling constraints, producing inconsistent generic output.
@@ -76,7 +79,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 
 ---
 
-## Workflow 2: Enrichment V0.8 — Detail
+## Workflow 2: Enrichment V0.10 — Detail
 
 **Trigger:** Webhook (`54ac3b7a-0479-4fa6-8965-204cd34addae`)
 
@@ -139,13 +142,24 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
     - Inputs: classifier output (subject_matter, tags) + artwork context (title, description) + campaign name/description (via Lookup field)
     - Skips output ("SKIP") for generic exhibitions with no distinctive theme
     - Output written to `Relevance Hypothesis (AI)` field; conditional expression clears field when "SKIP"
-14. Update Artwork record (tags, subject matter, medium, relevance hypothesis, status → "Pending - Enriched")
-15. **Artwork Rate Limit Delay** (`Wait`, 5 seconds) between each artwork
+14. **Dimension Extractor** — Basic LLM Chain (GPT-4o-mini, temp 0) + Structured Output Parser
+    - Extracts height, width, depth, and unit from artwork Description field
+    - Handles all dimension formats: `18 x 10.5`, `18" x 10.5"`, spelled-out numbers, mixed units, fractions
+    - Returns nulls when no dimensions found — never guesses
+    - Stores values in original units (no conversion); assumes inches if unspecified
+    - Output: `{height: number|null, width: number|null, depth: number|null, unit: string|null}`
+    - Cost: ~$0.001 per artwork (GPT-4o-mini)
+15. Update Artwork record (tags, subject matter, medium, relevance hypothesis, dimensions, status → "Pending - Enriched")
+16. **Artwork Rate Limit Delay** (`Wait`, 5 seconds) between each artwork
 
 ### Known Issues
 - "Pre-Process Submission" Code node triggers MCP validator false positive ("Cannot return primitive values") — valid Code node v2 syntax, works at runtime
 
 ### Changelog
+- **V0.10 (2026-03-16):** AI dimension extraction (#72):
+  - **Dimension Extractor** — new Basic LLM Chain (GPT-4o-mini, temp 0) + Structured Output Parser between Relevance Hypothesis and Update record. Extracts height, width, depth, and unit from artwork Description field. Handles all dimension formats (numeric, spelled-out, fractions, mixed units). Returns nulls when no dimensions found.
+  - **Airtable field renames** — `Height` → `Height (AI)`, `Width` → `Width (AI)`, `Depth` → `Depth (AI)`. New field: `Dimensions Unit (AI)` (singleLineText). Values stored in original units (no conversion).
+  - **Intake V1.6 update** — artwork upsert node updated to use renamed fields (`Height (AI)`, `Width (AI)`, `Depth (AI)`)
 - **V0.9 (2026-03-12):** Vision fix, skip-artists path, relevance hypothesis (#60, #61, #62):
   - **Fetch Artwork Image** — added HTTP Request node to download Airtable thumbnail as binary before classifier. GPT-4o vision requires binary image data, not text URLs. The model had been hallucinating descriptions from metadata because it never actually saw the images.
   - **Relevance Hypothesis** (#61) — new Basic LLM Chain (GPT-4o-mini, temp 0.3) between classifier and Update record. Hypothesizes artwork-to-exhibition theme connection. Outputs "SKIP" for generic exhibitions (no theme). New Airtable fields: `Relevance Hypothesis (AI)` (multilineText), `Campaign Descriptions (from Campaign)` (Lookup).
@@ -175,6 +189,32 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 
 ---
 
+## Workflow 3: Social Profile Discovery V1.0 — Detail
+
+**Trigger:** Webhook (`social-profile-discovery`) — control panel action
+
+**Flow:**
+1. Find Enriched Artists (Airtable: `{Status} = "Pending - Enriched"`)
+2. **Loop Over Artists** (`SplitInBatches`, batch size 1)
+3. **Has Website?** (IF) — checks if artist has Website field
+4. **Firecrawl Scrape Links** (HTTP Request → `POST /v2/scrape` with `formats: ["links"]`) — extracts all URLs from artist's website. 1 Firecrawl credit, handles JS rendering. Credential: "Fire Crawl Web Crawler"
+5. **Merge Website Links** (Set) — normalizes data flow from both IF branches (Firecrawl links or empty)
+6. **Social Profile Search** (Perplexity `sonar-deep-research`) — broad web search for social profiles using artist identity anchors. XML-structured prompt with disambiguation rules.
+7. **Validate & Merge** (Basic LLM Chain, GPT-4.1, temp 0.1) + Structured Output Parser — validates URLs, filters by confidence (HIGH/MEDIUM only), merges with existing submission data, outputs formatted text
+8. **Update Artist** (Airtable — writes `Social Profiles (AI)` field with formatted profile list)
+9. **Rate Limit Delay** (30 seconds between artists)
+
+**Output format:** One profile per line as `PLATFORM: URL` in the `Social Profiles (AI)` field.
+
+**No status change** — artists remain at "Pending - Enriched".
+
+**Integrations:** Firecrawl, Perplexity, OpenAI (GPT-4.1), Airtable
+
+### Changelog
+- **V1.0 (2026-03-16):** Initial release (#56). Standalone workflow with two-source discovery (Firecrawl website scrape + Perplexity deep-research), GPT-4.1 validation with JSON Schema strict mode.
+
+---
+
 ## AI Models Used
 
 | Node | Model | Purpose |
@@ -187,7 +227,11 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 | AI Email Beautifier | GPT-4o | Email HTML generation |
 | Artwork Image Classifier | GPT-4o | Vision-based artwork analysis |
 | Relevance Hypothesis (Relevance Model) | GPT-4o-mini (temp 0.3) | Artwork-to-exhibition theme connection |
+| Dimension Extractor (Dimension Model) | GPT-4o-mini (temp 0) | Dimension extraction from description text |
 | Artwork Output Parser | GPT-4.1-mini | JSON extraction |
+| Social Profile Search | Perplexity `sonar-deep-research` | Social media profile discovery |
+| Validate & Merge (Validate & Merge LLM) | GPT-4.1 (temp 0.1) | Social profile validation, deduplication, formatting |
+| Social Profile Parser (Parser LLM) | GPT-4.1-mini (temp 0.1) | JSON extraction for social profiles |
 
 ---
 
@@ -198,3 +242,34 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 - **Airtable auth:** OAuth2 (configured in n8n credentials)
 - **User Timezone:** America/New_York (Eastern Time)
 - **n8n expression rule:** Never use `$json` or `$json['field']` in expression fields. Always use `$('NodeName').item.json['field']`. The `$json` shorthand silently breaks when nodes are reordered. See V1.4 changelog.
+- **Set node v3.4 format:** Use `assignments.assignments[{id, name, value, type}]`, NOT `fields.values[{name, stringValue}]`. The old format saves via API but renders empty in the n8n UI. See skill template #10.
+- **n8n Reference Workflow:** `o6oYKsfttQnm4n7t` — contains verified node configs for Set, Firecrawl, chainLlm, lmChatOpenAi, outputParserStructured. Clone from here.
+- **Firecrawl `waitFor: 3000` is REQUIRED:** Without it, Firecrawl returns 500 errors. Always include `"waitFor": 3000` in `scrapeOptions.options`. Optional: `"onlyMainContent": true` strips navbars/footers (saves tokens). Default markdown format in UI is `{}` (empty object), not `{"type": "markdown"}`.
+- **Firecrawl credential:** `"Firecrawl account"` (`Mv9l4N593kDPmnd0`) — old `"Fire Crawl Web Crawler"` credential is deprecated.
+
+---
+
+## Pre-Flight Validation for n8n MCP Operations
+
+**MANDATORY before ANY `n8n_update_partial_workflow` or `n8n_create_workflow` call:**
+
+1. **Outline nodes first.** List every node you plan to add/update (name, type, typeVersion, key params). Get user approval before writing any MCP call.
+
+2. **Build the operations JSON array.**
+
+3. **Run the validator script:**
+   ```bash
+   echo '<operations JSON>' | node scripts/validate-n8n-nodes.js
+   ```
+
+4. **Fix ALL errors** before calling MCP. Do not proceed with any validation failures.
+
+5. **After the MCP call:** Run `n8n_validate_workflow` + verify with `n8n_get_workflow(mode: "structure")`.
+
+### Why This Exists
+
+Claude Code hooks (PreToolUse) cannot intercept MCP tool calls — they only fire for Bash/Edit/Write. The validator script is the only automated check before node configurations reach n8n. Skipping it has caused repeated runtime failures (wrong typeVersion, plain string model params, $json expression bugs) that required multiple debug cycles to resolve.
+
+### You Are a Refactoring Agent
+
+When configuring n8n nodes, you ASSEMBLE verified configurations from templates (`~/.claude/skills/n8n-project-config/SKILL.md`) and existing working nodes. You do NOT generate node parameters from training data. Your training data for n8n node schemas is unreliable — parameter names, nesting structures, and defaults differ between versions in ways that silently break at runtime.

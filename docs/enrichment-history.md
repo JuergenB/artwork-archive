@@ -42,6 +42,19 @@
 - Updated **Formatter** user message to reference new output structure
 - Key test case: Elise Wilson (lorem ipsum bio, artsvilleusa.com email, common name)
 
+## V0.10 (2026-03-16)
+- **AI Dimension Extraction** (#72) — added Dimension Extractor (GPT-4o-mini, temp 0) + Structured Output Parser
+  - Inserted between Relevance Hypothesis and Update record in artwork loop
+  - Extracts height, width, depth, unit from artwork Description field
+  - Handles all dimension formats: numeric, spelled-out, fractions, mixed units, various separators
+  - Returns nulls when no dimensions found — never guesses
+  - Stores in original units (no conversion); assumes inches if unspecified
+  - Airtable field renames: Height → Height (AI), Width → Width (AI), Depth → Depth (AI)
+  - New field: Dimensions Unit (AI) (singleLineText)
+  - Intake workflow updated to use renamed fields (V1.5)
+  - Cost: ~$0.001 per artwork
+- **Why LLM over regex**: Dimension formats have massive long tail (spelled-out numbers, mixed units, varying separators). GPT-4o-mini at temp 0 handles all variations reliably. Regex would require 50+ lines and constant maintenance.
+
 ## Hallucination Incident Log
 | Date | Artist | Issue | Model |
 |------|--------|-------|-------|

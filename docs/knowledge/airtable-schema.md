@@ -88,9 +88,9 @@
 | Medium | singleLineText | Artist-entered |
 | Subject Matter | singleLineText | Artist-entered |
 | Description | multilineText | Artist-entered |
-| Height | number | Default inches |
-| Width | number | Default inches |
-| Depth | number | Default inches |
+| Height (AI) | number | AI-extracted from Description |
+| Width (AI) | number | AI-extracted from Description |
+| Depth (AI) | number | AI-extracted from Description |
 | Price | currency | Retail price |
 | Year Created Date | singleLineText | String format: mm/dd/yyyy or yyyy |
 
@@ -100,6 +100,8 @@
 | Tags (AI) | multilineText | AI-generated tags |
 | Subject Matter (AI) | multilineText | AI-detected subject |
 | Medium (AI) | multilineText | AI-detected medium |
+| Relevance Hypothesis (AI) | multilineText | Artwork-to-exhibition theme connection |
+| Dimensions Unit (AI) | singleLineText | Unit of extracted dimensions (inches, cm, feet, mm) |
 
 ### Files
 | Field | Type | Notes |
