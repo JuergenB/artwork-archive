@@ -130,23 +130,51 @@
 
 ---
 
-## Table: Campaigns (`tblr0oR74rtvR6LN2`) — 13 fields
+## Table: Campaigns (`tblr0oR74rtvR6LN2`) — 24 fields
 
-| Field | Type | Notes |
-|-------|------|-------|
-| Campaign Name | multilineText | **Primary field** |
-| Campaign Descriptions | multilineText | |
-| Campaign Logo | multipleAttachments | |
-| Campaign Contact Emails | email | Admin notifications |
-| Admin Notification Subject | singleLineText | Email template |
-| Admin Notification Body | multilineText | Email template |
-| Submitter Thank You Subject | singleLineText | Confirmation email |
-| Submitter Thank You Body | multilineText | Confirmation email |
-| Active Campaign Lists | multipleSelects | CRM integration |
-| Active Campaign Tags | singleLineText | CRM integration |
-| Campaign Slack ID | multilineText | e.g. #not-real-art-general |
-| Artworks | multipleRecordLinks | → Artworks |
-| Artists | multipleRecordLinks | → Artists |
+### Campaign Info
+| Field | ID | Type | Notes |
+|-------|-----|------|-------|
+| Campaign Name | fldXAiW8Kg4fXWRNd | multilineText | **Primary field** |
+| Campaign Short Name | fldz6RsA61GrDNXbP | formula | |
+| Campaign Descriptions | fld4T1DsZ898RJkuD | multilineText | |
+| Campaign Logo | flda2UHrhdnd1mnhS | multipleAttachments | |
+| Campaign Contact Emails | fld9WkRcNhqqoPaUa | email | Admin notifications |
+| Landing Page URL | fldsrUirUG8uCepAW | url | |
+| Landing Page Embed Code | fldUOd6A4nWY0ARv6 | formula | Paperform embed |
+
+### Email Templates
+| Field | ID | Type | Notes |
+|-------|-----|------|-------|
+| Admin Notification Subject | fldxCzqAb8CnKK2PM | singleLineText | |
+| Admin Notification Body | fldnI0tfyxrEuXZAJ | multilineText | |
+| Submitter Thank You Subject | fldMVra0I5YS60d9f | singleLineText | |
+| Submitter Thank You Body | fld36DlwRry0Eeand | multilineText | |
+
+### Exhibition Details
+| Field | ID | Type | Notes |
+|-------|-----|------|-------|
+| Official Exhibition Name | fldisPjBI9xFyCqEz | singleLineText | |
+| Exhibition Venue | fldaeaAlxldrU9oIv | singleLineText | |
+| Exhibition Address | fldaNT4nhBeUbRHi7 | singleLineText | |
+| Exhibition Open | fldHqWMAxQB0Ba9E0 | date | Exhibition start date — year used for collections_expand |
+| Exhibition Close | fldUDoCPoy59Qn1td | date | Exhibition end date |
+| Exhibition URL | fldCtdBCbbmi5L2ll | url | Public exhibition page |
+
+### CRM Integration
+| Field | ID | Type | Notes |
+|-------|-----|------|-------|
+| Active Campaign Lists | fldxC6uLiPyWVhOcS | multipleSelects | |
+| Active Campaign Tags | fldrdh6cvgEiNl9Vo | singleLineText | |
+| Campaign Slack ID | fldFvLv9jHftNsmMg | multilineText | e.g. #not-real-art-general |
+
+### Links
+| Field | ID | Type | Notes |
+|-------|-----|------|-------|
+| Artworks | fld2K29givCPnqFQ7 | multipleRecordLinks | → Artworks |
+| Artists | fldIGnCrToNVsa85m | multipleRecordLinks | → Artists |
+| Partner Organizations | flduNSliJgRyZSG1s | multipleRecordLinks | → Partner Organizations |
+| Organization_ID (from Partner Organizations) | fld8NqexyNjsxKMyj | multipleLookupValues | Lookup |
 
 ---
 
