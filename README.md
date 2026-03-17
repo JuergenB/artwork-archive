@@ -17,13 +17,15 @@ This system automates the entire journey from submission to enriched archive rec
 
 The result: every submission arrives in Airtable fully enriched and ready for human curatorial review, with AI-generated profiles, validated citations, and classified artwork images.
 
-## What's Next: Partner Organizations
+## What's Next: Export Utility
 
-We're expanding to support **partnership exhibitions** — collaborations with galleries, arts programs, and organizations that bring curated groups of artists into Not Real Art exhibitions. A new partner onboarding system will capture organization profiles, curator details, and exhibition preferences, with automatic attribution in Artwork Archive exports. See [Epic #64](https://github.com/JuergenB/artwork-archive/issues/64) for details.
+Phase C is a **Next.js TypeScript web application** for exporting enriched data from Airtable into Artwork Archive-compatible CSV files. It includes a visual field mapping editor, data transformation pipeline, and admin dashboard — all triggered from Airtable's control panel or the web UI. See [Epic #74](https://github.com/JuergenB/artwork-archive/issues/74) for details.
+
+We're also expanding to support **partnership exhibitions** — collaborations with galleries, arts programs, and organizations that bring curated groups of artists. See [Epic #64](https://github.com/JuergenB/artwork-archive/issues/64).
 
 ## Architecture
 
-Built entirely on **n8n workflow automation + Airtable** — no application code, no servers to maintain.
+Built on **n8n workflow automation + Airtable** for intake and enrichment, with a **Next.js export utility** (Phase C) for data transformation and CSV generation.
 
 ```
 Paperform (online submission form)
@@ -67,12 +69,23 @@ Paperform (online submission form)
                    (Human Review)
                           |
                           v
-            Phase C: Export to Artwork Archive (planned)
++--------------------------------------------------+
+|  Next.js Export Utility (Phase C)                |
+|  (Vercel — web UI + webhook API)                 |
+|                                                  |
+|  Load Field Mappings --> Fetch Records -->        |
+|  Transform Data --> Generate CSVs -->             |
+|  Update Status --> Write Export Log               |
++--------------------------------------------------+
+                          |
+                          v
+             Artwork Archive CSV Import
 ```
 
 **Infrastructure:**
-- **Workflows:** [n8n Cloud](https://n8n.io) (4 workflows)
-- **Database:** [Airtable](https://airtable.com) (7 tables: Artists, Artworks, Campaigns, Pipeline Actions, Pipeline Runs, Import Log, Partner Organizations)
+- **Workflows:** [n8n Cloud](https://n8n.io) (4 workflows — intake, enrichment, social profiles, error handler)
+- **Database:** [Airtable](https://airtable.com) (8 tables: Artists, Artworks, Campaigns, Pipeline Actions, Pipeline Runs, Import Log, Partner Organizations, Field Mappings)
+- **Export Utility:** Next.js 16 + Auth.js + shadcn/ui on [Vercel](https://vercel.com) (Phase C)
 - **Forms:** [Paperform](https://paperform.co) (webhook integration)
 - **Web Scraping:** [Firecrawl](https://firecrawl.dev) (social link extraction from artist websites)
 - **CRM:** [ActiveCampaign](https://www.activecampaign.com)
@@ -122,7 +135,7 @@ The enrichment pipeline includes several techniques to ensure research accuracy:
 |-------|--------|-------|
 | **A: Foundation** | Complete | Intake pipeline, enrichment pipeline, Airtable schema, documentation |
 | **B: Operations Hub** | Complete | Pipeline Actions + Pipeline Runs tables, progress tracking, admin dashboard |
-| **C: Export Pipeline** | Planned | Airtable to Artwork Archive CSV export — requires field mapping discussion |
+| **C: Export Utility** | In Progress | Next.js app: field mapping UI, data transforms, AA CSV generation ([Epic #74](https://github.com/JuergenB/artwork-archive/issues/74)) |
 | **D: Future Improvements** | Backlog | Slack integration, analytics, model evaluation, tech debt |
 | **E: Partner Organizations** | Planned | Partner org onboarding, curator tracking, submission linking, export attribution |
 
@@ -136,9 +149,16 @@ artwork-archive/
 ├── README.md                          # This file
 ├── .env                               # Airtable credentials (git-ignored)
 ├── .gitignore
+├── app/                               # Phase C: Next.js export utility (Vercel)
+│   ├── app/                           # Next.js App Router pages
+│   ├── lib/                           # Airtable client, export pipeline, transforms
+│   ├── components/                    # shadcn/ui components
+│   └── types/                         # TypeScript type definitions
 ├── docs/
 │   ├── MEMORY.md                      # Project memory (persists across AI sessions)
 │   ├── enrichment-history.md          # Enrichment pipeline version history
+│   ├── n8n-claude-code-issues.md      # n8n MCP systemic issues catalog
+│   ├── n8n-claude-code-issues-research.md  # MCP alternatives research
 │   ├── knowledge/
 │   │   ├── airtable-schema.md         # Complete Airtable schema
 │   │   ├── AA Rolling Submissions Design.md  # System design document
@@ -146,11 +166,12 @@ artwork-archive/
 │   ├── phases/
 │   │   ├── phase-a-foundation.md      # Complete
 │   │   ├── phase-b-operations-hub.md  # Complete
-│   │   ├── phase-c-export-pipeline.md # Planned
+│   │   ├── phase-c-export-pipeline.md # In progress (Next.js app)
 │   │   └── phase-d-future-improvements.md  # Backlog
 │   ├── design/                        # Architecture diagrams (future)
 │   └── prompts/                       # AI prompt library (future)
-├── scripts/                           # Helper scripts (future)
+├── scripts/
+│   └── validate-n8n-nodes.js          # n8n MCP pre-flight validator (8 checks)
 └── workflows/                         # n8n workflow JSON backups (date-coded)
 ```
 
@@ -169,13 +190,19 @@ The `workflows/` directory contains date-coded JSON exports of n8n workflows, se
 
 ## Development
 
-This is a no-code project — all logic lives in n8n workflow nodes. Development is done through:
+**n8n workflows** (intake, enrichment, social profiles): All logic lives in n8n workflow nodes. Development through n8n Cloud UI + MCP via Claude Code.
 
-1. **n8n Cloud UI** — visual workflow editor
-2. **n8n MCP** — programmatic workflow management via Claude Code (see `CLAUDE.md` for session rules)
-3. **Airtable** — schema and data management
+**Export utility** (Phase C): Next.js TypeScript app in `/app`. Development through Claude Code + local dev server.
 
-There is no build step, no local server, and no compiled code.
+```bash
+cd app
+npm install
+npm run dev        # Start dev server on localhost:3000
+npm run build      # Production build
+npm run lint       # ESLint
+```
+
+**Prerequisites:** Node.js 20+, npm, Vercel CLI (for deployment)
 
 ## License
 

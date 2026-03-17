@@ -1,10 +1,13 @@
 # Artwork Archive — Project Memory
 
 ## Architecture
-- No application code — all logic lives in n8n workflow nodes + Airtable
+- **Intake + Enrichment**: n8n workflow nodes + Airtable (no application code)
+- **Export Utility (Phase C)**: Next.js 16 + Auth.js + shadcn/ui app in `/app` directory, deployed on Vercel. Uses Airtable as sole database (including field mappings). Epic #74.
 - n8n instance: https://polymash.app.n8n.cloud
 - Airtable base: `appDFU2JdAw2Ckax4` (AA Rolling Submissions)
 - Airtable PAT stored in project `.env`
+- **Boilerplate**: `polymash-nextjs-airtable-boilerplate` (Next.js 16, Auth.js 5, Airtable SDK 0.12.2, shadcn/ui, Tailwind v4)
+- **F1 Fantasy App reference**: `formula-one-fantasy-assistant` — production Airtable client pattern (fetchAll<T>, fetchById<T>, typed transforms, lazy-init)
 
 ## Workflows
 - **Intake V1.6** (`QtP1J9Fwr5SPRG0u`) — Active, updated 2026-03-16 (dimension field renames #72: Height/Width/Depth → Height (AI)/Width (AI)/Depth (AI))
@@ -35,7 +38,7 @@
 ## Project Phases — see `docs/phases/` for full details
 - **Phase A (done)**: [phase-a-foundation.md](../../docs/phases/phase-a-foundation.md) — Intake V1.0, Enrichment V0.8, schema docs, .env
 - **Phase B (complete)**: [phase-b-operations-hub.md](../../docs/phases/phase-b-operations-hub.md) — Pipeline Actions + Pipeline Runs tables, 13 pipeline tracking nodes in Enrichment V0.8, documentation. All issues #33-44 closed. Airtable Interface panels remain manual work (no API).
-- **Phase C (planned, BLOCKED)**: [phase-c-export-pipeline.md](../../docs/phases/phase-c-export-pipeline.md) — Airtable → AA CSV export. Requires field mapping discussion before starting.
+- **Phase C (in progress)**: Next.js export utility app in `/app` directory. Pivoted from n8n workflow due to systemic MCP issues. Epic #74, 10 sub-issues (#75-#84). Tech: Next.js 16, Auth.js 5, Airtable SDK, shadcn/ui, Vercel. Field mapping decisions (#84) can proceed in parallel with development.
 - **Phase D (backlog)**: [phase-d-future-improvements.md](../../docs/phases/phase-d-future-improvements.md) — Tech debt, model evaluation, Slack, analytics
 
 ## User Preferences

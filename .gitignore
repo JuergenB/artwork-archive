@@ -2,6 +2,7 @@
 .env.local
 .env.*
 node_modules/
+.next/
 .DS_Store
 
 # Large data exports (contact CSVs, ~28MB)
