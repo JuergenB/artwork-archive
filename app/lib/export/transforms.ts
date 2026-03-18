@@ -470,6 +470,50 @@ export function collectionsExpand(ctx: CollectionsContext): string {
   return deduped.join(", ")
 }
 
+// ─── Nationality Normalize ──────────────────────────────
+
+const NATIONALITY_MAP: Record<string, string> = {
+  "united states": "American", "usa": "American", "us": "American", "u.s.": "American", "u.s.a.": "American",
+  "canada": "Canadian", "mexico": "Mexican", "brazil": "Brazilian", "argentina": "Argentine",
+  "colombia": "Colombian", "chile": "Chilean", "peru": "Peruvian", "venezuela": "Venezuelan",
+  "cuba": "Cuban", "puerto rico": "Puerto Rican", "dominican republic": "Dominican",
+  "costa rica": "Costa Rican", "guatemala": "Guatemalan", "honduras": "Honduran",
+  "el salvador": "Salvadoran", "panama": "Panamanian", "ecuador": "Ecuadorian",
+  "uruguay": "Uruguayan", "bolivia": "Bolivian", "paraguay": "Paraguayan",
+  "united kingdom": "British", "uk": "British", "england": "English", "scotland": "Scottish",
+  "wales": "Welsh", "ireland": "Irish", "france": "French", "germany": "German",
+  "italy": "Italian", "spain": "Spanish", "portugal": "Portuguese", "netherlands": "Dutch",
+  "belgium": "Belgian", "switzerland": "Swiss", "austria": "Austrian", "sweden": "Swedish",
+  "norway": "Norwegian", "denmark": "Danish", "finland": "Finnish", "iceland": "Icelandic",
+  "poland": "Polish", "czech republic": "Czech", "czechia": "Czech",
+  "hungary": "Hungarian", "romania": "Romanian", "greece": "Greek",
+  "turkey": "Turkish", "russia": "Russian", "ukraine": "Ukrainian",
+  "china": "Chinese", "japan": "Japanese", "south korea": "South Korean", "korea": "Korean",
+  "india": "Indian", "pakistan": "Pakistani", "bangladesh": "Bangladeshi",
+  "philippines": "Filipino", "vietnam": "Vietnamese", "thailand": "Thai",
+  "indonesia": "Indonesian", "malaysia": "Malaysian", "singapore": "Singaporean",
+  "taiwan": "Taiwanese", "israel": "Israeli", "iran": "Iranian", "iraq": "Iraqi",
+  "saudi arabia": "Saudi", "egypt": "Egyptian", "nigeria": "Nigerian",
+  "south africa": "South African", "kenya": "Kenyan", "ghana": "Ghanaian",
+  "ethiopia": "Ethiopian", "morocco": "Moroccan", "tanzania": "Tanzanian",
+  "australia": "Australian", "new zealand": "New Zealander",
+  "jamaica": "Jamaican", "trinidad and tobago": "Trinidadian", "haiti": "Haitian",
+  "lebanon": "Lebanese", "syria": "Syrian", "jordan": "Jordanian",
+}
+
+/**
+ * Convert country name to nationality adjective.
+ * "United States" → "American", "Canada" → "Canadian".
+ * Already-correct nationalities pass through unchanged.
+ */
+export function nationalityNormalize(value: string | null | undefined): string {
+  if (!value) return ""
+  const trimmed = value.trim()
+  if (!trimmed) return ""
+  const normalized = NATIONALITY_MAP[trimmed.toLowerCase()]
+  return normalized ?? trimmed
+}
+
 // ─── Transform Dispatcher ───────────────────────────────────
 
 import type { TransformType } from "../types"
@@ -507,6 +551,8 @@ export function applyTransform(
       return stripMarkdown(value)
     case "ai_tags":
       return aiTags(value)
+    case "nationality_normalize":
+      return nationalityNormalize(value)
     // These require structured context — use specific functions directly
     case "notes_builder":
     case "field_concatenate":

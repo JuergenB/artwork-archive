@@ -17,7 +17,7 @@
 
 ## Phase C Export — Key Decisions (2026-03-17)
 - **Field mapping spec**: `docs/knowledge/field-mapping-spec.md` — consolidated build reference for all AA mappings
-- **Transforms**: 13 total — state_abbreviation, url_validate, social_media_profile, title_case (addresses only, never names — #57), phone_normalize, pipe_separate, dimension_format, date_format, strip_markdown, ai_tags, notes_builder, field_concatenate, collections_expand
+- **Transforms**: 14 total — state_abbreviation, url_validate, social_media_profile, title_case (addresses only, never names — #57), phone_normalize, pipe_separate, dimension_format, date_format, strip_markdown, ai_tags, notes_builder, field_concatenate, collections_expand, nationality_normalize
 - **Write-back toggle**: Per-field checkbox on Field Mappings table. When checked + transform active, writes transformed value back to Airtable source during export. Safe: state/title_case/phone/social/url. Export-only: pipe_separate/dimension/notes_builder/field_concatenate/collections_expand/ai_tags/strip_markdown.
 - **Notes field concatenation**: Artist Notes = Statement → Profile (AI) → Exhibition History → Social Profiles → Summary → Tags. Artwork Notes = Exhibition Fit → Purchase Link. Export-only, never write back.
 - **Medium/Subject Matter**: Concatenate artist-submitted + AI analysis (append "\n\nAI ANALYSIS: {AI value}" if different). `field_concatenate` transform.
@@ -29,14 +29,19 @@
 - **Auth**: Users stored in Airtable (email, hashed password, role: admin/curator/viewer). Auth.js Credentials provider.
 - **Multi-source profiles**: Deferred to Phase D (#87). Build for our Airtable first, refactor for multiple sources later.
 
-## Phase C Export — Workflow
+## Phase C Export — Workflow (implemented 2026-03-18)
 - Curator (Kirsten) reviews enriched records in Airtable Interface
-- Curator approves records for export (need status between "Pending - Enriched" and "Exported")
-- Export triggered via Airtable button/webhook or web UI
-- Pipeline: load mappings → fetch approved records → apply transforms → generate CSVs → write back → upload files → log export → send email
-- Email to Kirsten with counts + CSV download links
-- Kirsten reviews, forwards to AA team (Justin) with links
-- CSVs need public/shareable URLs (too large for email attachment)
+- Curator approves records for export → status "Approved for Export"
+- Export triggered via web UI (`/dashboard/export` → "Export CSVs" button)
+- Pipeline: fetch approved records → apply all transforms → generate CSVs → upload to Vercel Blob → create Export Log → update statuses to "Exported"
+- **CSV storage**: Vercel Blob (`@vercel/blob`, public URLs, `BLOB_READ_WRITE_TOKEN` env var)
+- **File naming**: `AA-Artists-{CampaignSlug}-{YYYY-MM-DD}.csv`, `AA-Artworks-{CampaignSlug}-{YYYY-MM-DD}.csv`
+- **Email**: v1 uses `mailto:` link (pre-filled subject/body with CSV URLs). No auto-send.
+- **Status flow**: Approved for Export → Exported → Delivered → Accepted/Rejected
+- **Export Log status**: In Progress → Exported → Delivered → Accepted/Rejected/Failed
+- Export Logs page at `/dashboard/export-logs` with download links, Compose Email, Accept/Reject actions
+- Kirsten clicks "Compose Email" → mailto opens with pre-filled template → sends via her email client
+- Justin processes import → Kirsten clicks "Accept" → all records updated to "Accepted"
 
 ## Key Decisions (n8n/enrichment — pre Phase C)
 - **Perplexity model**: `sonar-deep-research` is required. `sonar-pro` hallucinated citations badly (Yayoi Kusama links for unrelated artists). Fixed in V0.6. See [enrichment-history.md](enrichment-history.md).
@@ -78,6 +83,8 @@
 
 ## Feedback
 - [Issue closure checklist](memory/feedback_issue_closure_checklist.md) — Always re-read GitHub issues before closing to verify all tasks complete
+- [Version numbering](memory/feedback_version_numbering.md) — n8n workflow display names must match docs; use 3-level semver (V0.8.1)
+- [Issue closure discipline](memory/feedback_issue_closure_discipline.md) — Proactively audit open issues; don't let implemented work accumulate as "open"
 
 ## References
 - [Field mapping spec](../../docs/knowledge/field-mapping-spec.md) — consolidated AA export mapping reference

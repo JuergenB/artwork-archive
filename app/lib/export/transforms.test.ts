@@ -15,6 +15,7 @@ import {
   buildArtworkNotes,
   fieldConcatenate,
   collectionsExpand,
+  nationalityNormalize,
   applyTransform,
 } from "./transforms"
 
@@ -530,11 +531,11 @@ describe("buildArtistNotes", () => {
       tagsAi: "abstract, modern",
     })
     expect(result).toContain("ARTIST STATEMENT:\nI create art")
-    expect(result).toContain("ARTIST PROFILE:\nJohn is an artist") // markdown stripped
+    expect(result).toContain("ARTIST PROFILE (AI):\nJohn is an artist") // markdown stripped
     expect(result).toContain("EXHIBITION HISTORY:")
-    expect(result).toContain("SOCIAL PROFILES:")
-    expect(result).toContain("SUMMARY:")
-    expect(result).toContain("TAGS:")
+    expect(result).toContain("ADDITIONAL SOCIAL PROFILES (AI):")
+    expect(result).toContain("SUMMARY (AI):")
+    expect(result).toContain("TAGS (AI):")
   })
 
   it("omits empty sections", () => {
@@ -557,7 +558,7 @@ describe("buildArtworkNotes", () => {
       relevanceHypothesisAi: "Strong connection to exhibition theme",
       linkToPurchaseUrl: "https://shop.example.com/piece1",
     })
-    expect(result).toContain("EXHIBITION FIT:")
+    expect(result).toContain("EXHIBITION FIT (AI):")
     expect(result).toContain("PURCHASE LINK:")
   })
 
@@ -716,5 +717,57 @@ describe("applyTransform", () => {
     expect(applyTransform("notes_builder", "raw")).toBe("raw")
     expect(applyTransform("field_concatenate", "raw")).toBe("raw")
     expect(applyTransform("collections_expand", "raw")).toBe("raw")
+  })
+
+  it("dispatches nationality_normalize", () => {
+    expect(applyTransform("nationality_normalize", "United States")).toBe("American")
+    expect(applyTransform("nationality_normalize", "Canada")).toBe("Canadian")
+  })
+})
+
+// ─── Nationality Normalize ──────────────────────────────────
+
+describe("nationalityNormalize", () => {
+  it("returns empty string for null/undefined/empty", () => {
+    expect(nationalityNormalize(null)).toBe("")
+    expect(nationalityNormalize(undefined)).toBe("")
+    expect(nationalityNormalize("")).toBe("")
+    expect(nationalityNormalize("  ")).toBe("")
+  })
+
+  it("converts country names to nationality adjectives", () => {
+    expect(nationalityNormalize("United States")).toBe("American")
+    expect(nationalityNormalize("united states")).toBe("American")
+    expect(nationalityNormalize("USA")).toBe("American")
+    expect(nationalityNormalize("Canada")).toBe("Canadian")
+    expect(nationalityNormalize("Mexico")).toBe("Mexican")
+    expect(nationalityNormalize("United Kingdom")).toBe("British")
+    expect(nationalityNormalize("UK")).toBe("British")
+    expect(nationalityNormalize("France")).toBe("French")
+    expect(nationalityNormalize("Germany")).toBe("German")
+    expect(nationalityNormalize("Japan")).toBe("Japanese")
+    expect(nationalityNormalize("China")).toBe("Chinese")
+    expect(nationalityNormalize("India")).toBe("Indian")
+    expect(nationalityNormalize("Brazil")).toBe("Brazilian")
+    expect(nationalityNormalize("Australia")).toBe("Australian")
+    expect(nationalityNormalize("South Korea")).toBe("South Korean")
+    expect(nationalityNormalize("Nigeria")).toBe("Nigerian")
+  })
+
+  it("passes through already-correct nationalities", () => {
+    expect(nationalityNormalize("American")).toBe("American")
+    expect(nationalityNormalize("Canadian")).toBe("Canadian")
+    expect(nationalityNormalize("French")).toBe("French")
+  })
+
+  it("passes through unknown values", () => {
+    expect(nationalityNormalize("Atlantean")).toBe("Atlantean")
+    expect(nationalityNormalize("Some Place")).toBe("Some Place")
+  })
+
+  it("is case-insensitive", () => {
+    expect(nationalityNormalize("UNITED STATES")).toBe("American")
+    expect(nationalityNormalize("united kingdom")).toBe("British")
+    expect(nationalityNormalize("JAPAN")).toBe("Japanese")
   })
 })

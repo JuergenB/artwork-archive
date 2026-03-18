@@ -212,7 +212,7 @@ export function toExportLog(fields: Record<string, unknown>, id: string): Export
     id,
     exportId: asString(fields["Export ID"]),
     timestamp: asString(fields["Timestamp"]),
-    exportStatus: asString(fields["Export Status"]),
+    exportStatus: asString(fields["Export Status"]) as ExportLog["exportStatus"],
     artistCount: asString(fields["Number of Artists Exported"]),
     artworkCount: asString(fields["Number of Artworks Exported"]),
     campaignNames: asString(fields["Campaign Names Exported"]),
@@ -225,6 +225,12 @@ export function toExportLog(fields: Record<string, unknown>, id: string): Export
     triggeredBy: asString(fields["Triggered By"]),
     artistRecordIds: asString(fields["Artist Record IDs"]),
     artworkRecordIds: asString(fields["Artwork Record IDs"]),
+    emailRecipients: asString(fields["Email Recipients"]),
+    emailCc: asString(fields["Email CC"]),
+    emailSubject: asString(fields["Email Subject"]),
+    emailBody: asString(fields["Email Body"]),
+    emailSentAt: asString(fields["Email Sent At"]),
+    emailStatus: asString(fields["Email Status"]),
   }
 }
 
@@ -294,4 +300,35 @@ export async function createExportLog(
   const table = getTable("AIRTABLE_EXPORT_LOGS_TABLE_ID")
   const record = await table.create(fields as Airtable.FieldSet)
   return toExportLog(record.fields, record.id)
+}
+
+export async function updateExportLog(
+  recordId: string,
+  fields: Record<string, unknown>
+): Promise<ExportLog> {
+  const table = getTable("AIRTABLE_EXPORT_LOGS_TABLE_ID")
+  const record = await table.update(recordId, fields as Airtable.FieldSet)
+  return toExportLog(record.fields, record.id)
+}
+
+/**
+ * Batch update Status field on multiple records in a table.
+ * Airtable API allows max 10 records per batch update call.
+ */
+export async function updateRecordStatuses(
+  tableEnvVar: string,
+  recordIds: string[],
+  status: string
+): Promise<void> {
+  const table = getTable(tableEnvVar)
+  const BATCH_SIZE = 10
+
+  for (let i = 0; i < recordIds.length; i += BATCH_SIZE) {
+    const batch = recordIds.slice(i, i + BATCH_SIZE)
+    const updates = batch.map((id) => ({
+      id,
+      fields: { Status: status } as Airtable.FieldSet,
+    }))
+    await table.update(updates)
+  }
 }

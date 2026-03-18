@@ -6,6 +6,7 @@ export type ArtistStatus =
   | "Needs Review"
   | "Approved for Export"
   | "Exported"
+  | "Accepted"
   | "On Hold"
   | "Error - Data"
   | "Error - Automation"
@@ -17,11 +18,18 @@ export type ArtworkStatus =
   | "Needs Review"
   | "Approved for Export"
   | "Exported"
+  | "Accepted"
   | "On Hold"
   | "Error - Data"
   | "Error - Automation"
 
-export type ExportStatus = "In Progress" | "Success" | "Failed"
+export type ExportStatus =
+  | "In Progress"
+  | "Exported"
+  | "Delivered"
+  | "Accepted"
+  | "Rejected"
+  | "Failed"
 
 export type UserRole = "admin" | "curator" | "viewer"
 
@@ -133,6 +141,7 @@ export type TransformType =
   | "notes_builder"
   | "field_concatenate"
   | "collections_expand"
+  | "nationality_normalize"
 
 export type ExportType = "Full" | "Campaign" | "Preview"
 
@@ -153,7 +162,7 @@ export interface ExportLog {
   id: string
   exportId: string | null
   timestamp: string | null
-  exportStatus: string | null
+  exportStatus: ExportStatus | null
   artistCount: string | null
   artworkCount: string | null
   campaignNames: string | null
@@ -166,6 +175,12 @@ export interface ExportLog {
   triggeredBy: string | null
   artistRecordIds: string | null
   artworkRecordIds: string | null
+  emailRecipients: string | null
+  emailCc: string | null
+  emailSubject: string | null
+  emailBody: string | null
+  emailSentAt: string | null
+  emailStatus: string | null
 }
 
 export interface User {

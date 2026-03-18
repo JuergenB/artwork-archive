@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ChevronDown, ChevronRight, Download, Eye, Users, ImageIcon } from "lucide-react"
+import { ChevronDown, ChevronRight, Download, Eye, Users, ImageIcon, Check, ExternalLink, Loader2 } from "lucide-react"
 import type { Campaign, Artist, Artwork } from "@/lib/types"
 import type { ExportPreviewData, ExportPreviewArtist, ExportPreviewArtwork } from "@/app/api/export/preview/route"
 import { ArtistDetailSheet, ArtworkDetailSheet } from "./record-detail-sheet"
@@ -42,6 +42,17 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
   const [initialLoad, setInitialLoad] = useState(true)
   const [selectedArtist, setSelectedArtist] = useState<ArtistWithArtworks | null>(null)
   const [selectedArtwork, setSelectedArtwork] = useState<{ artwork: ExportPreviewArtwork; artistName: string | null } | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportResult, setExportResult] = useState<{
+    artistCsvUrl: string
+    artworkCsvUrl: string
+    artistCount: number
+    artworkCount: number
+    campaignName: string
+    emailSubject: string
+    emailBody: string
+    exportLogId: string
+  } | null>(null)
 
   // Load "All Campaigns" on mount
   useEffect(() => {
@@ -85,6 +96,37 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
 
   function collapseAll() {
     setExpandedArtists(new Set())
+  }
+
+  async function handleExport() {
+    if (!previewData || previewData.totalArtists === 0) return
+    if (!confirm(
+      `Export ${previewData.totalArtists} artists and ${previewData.totalArtworks} artworks?\n\n` +
+      `This will generate CSV files and mark all records as "Exported" in Airtable.`
+    )) return
+
+    setExporting(true)
+    setExportResult(null)
+    try {
+      const res = await fetch("/api/export/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          campaignId: selectedCampaign,
+          triggeredBy: "Export UI",
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error ?? "Export failed")
+      }
+      const result = await res.json()
+      setExportResult(result)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Export failed")
+    } finally {
+      setExporting(false)
+    }
   }
 
   // Group artworks by artist
@@ -280,24 +322,87 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
                   Step 3: Export
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Generate Artwork Archive CSV files for{" "}
-                    <span className="font-medium text-foreground">
-                      {previewData.totalArtists} {previewData.totalArtists === 1 ? "artist" : "artists"}
-                    </span>{" "}
-                    and{" "}
-                    <span className="font-medium text-foreground">
-                      {previewData.totalArtworks} {previewData.totalArtworks === 1 ? "artwork" : "artworks"}
-                    </span>
-                    . Records will be marked as &ldquo;Exported&rdquo; in Airtable after download.
-                  </p>
-                  <Button size="lg" disabled className="gap-2">
-                    <Download className="h-4 w-4" />
-                    Export CSVs
-                  </Button>
-                </div>
+              <CardContent className="space-y-4">
+                {!exportResult ? (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Generate Artwork Archive CSV files for{" "}
+                      <span className="font-medium text-foreground">
+                        {previewData.totalArtists} {previewData.totalArtists === 1 ? "artist" : "artists"}
+                      </span>{" "}
+                      and{" "}
+                      <span className="font-medium text-foreground">
+                        {previewData.totalArtworks} {previewData.totalArtworks === 1 ? "artwork" : "artworks"}
+                      </span>
+                      . Records will be marked as &ldquo;Exported&rdquo; in Airtable.
+                    </p>
+                    <Button
+                      size="lg"
+                      onClick={handleExport}
+                      disabled={exporting}
+                      className="gap-2"
+                    >
+                      {exporting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Exporting...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-4 w-4" />
+                          Export CSVs
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                      <Check className="h-5 w-5" />
+                      <span className="font-medium">
+                        Export complete — {exportResult.artistCount} artists, {exportResult.artworkCount} artworks
+                      </span>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <a href={exportResult.artistCsvUrl} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" className="gap-2">
+                          <ExternalLink className="h-4 w-4" />
+                          Download Artists CSV
+                        </Button>
+                      </a>
+                      <a href={exportResult.artworkCsvUrl} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" className="gap-2">
+                          <ExternalLink className="h-4 w-4" />
+                          Download Artworks CSV
+                        </Button>
+                      </a>
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Send the CSV links to the Artwork Archive team:
+                      </p>
+                      <a
+                        href={`mailto:?subject=${encodeURIComponent(exportResult.emailSubject)}&body=${encodeURIComponent(exportResult.emailBody)}`}
+                        onClick={() => {
+                          fetch(`/api/export/${exportResult.exportLogId}/deliver`, { method: "POST" })
+                        }}
+                      >
+                        <Button variant="default" className="gap-2">
+                          <ExternalLink className="h-4 w-4" />
+                          Compose Email to Justin
+                        </Button>
+                      </a>
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <a href="/dashboard/export-logs" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
+                        View in Export Logs →
+                      </a>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
