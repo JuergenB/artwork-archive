@@ -5,7 +5,9 @@
 
 ---
 
-## Artist Mappings (AA has 34 columns)
+## Artist Mappings (AA has 40 columns)
+
+> Rebuilt 2026-03-18 from AA-Artist-Template.xlsx. Previous version had 34 columns — was missing cols 33-39.
 
 ### Direct Mappings
 
@@ -24,11 +26,19 @@
 | 24 | Bio | `Bio` | none | | Direct mapping |
 | 25 | Website | `Website` | `url_validate` | ✓ | |
 | 28 | Artist | (hardcoded) | none | | Always "yes" |
-| 33 | Contact Image Url | `Contact Image URL` | `url_validate` | | Use Paperform S3/CDN URL — NEVER Airtable thumbnail |
+| 33 | Contact Tags | `AI Tags` | `ai_tags` | | Dedup, sort alphabetically |
+| 34 | Contact Image Url | `Contact Image URL` | `url_validate` | | Use Paperform S3/CDN URL — NEVER Airtable thumbnail |
+| 35 | Instagram Url | `Instagram URL` | `social_media_profile` | ✓ | Normalize to canonical URL |
+| 36 | Facebook Url | `Facebook URL` | `social_media_profile` | ✓ | Normalize to canonical URL |
+| 37 | Twitter Url | `Twitter URL` | `social_media_profile` | ✓ | Normalize to canonical URL |
+| 38 | LinkedIn Url | `LinkedIn URL` | `social_media_profile` | ✓ | Normalize to canonical URL |
+| 39 | Pinterest URL | `Pinterest URL` | `social_media_profile` | ✓ | Normalize to canonical URL |
 
 ### Notes Field (col 23) — Concatenation
 
 Assembled at export time via `notes_builder`. Never written back to Airtable.
+
+Social URLs now have dedicated AA columns (35-39) — removed from Notes builder.
 
 **Order:**
 ```
@@ -45,22 +55,13 @@ Participated in {Official Exhibition Name} presented by {Organization Name}
 (one line per campaign/partner)
 
 ══════════════════════════════
-SOCIAL PROFILES:
-Instagram: {Instagram URL}
-Facebook: {Facebook URL}
-LinkedIn: {LinkedIn URL}
-Twitter: {Twitter URL}
-Pinterest: {Pinterest URL}
-(submitted URLs first, then AI-discovered from Social Profiles (AI) not already listed)
-(only include platforms with data)
+ADDITIONAL SOCIAL PROFILES:
+{Social Profiles (AI) — only platforms NOT covered by cols 35-39, e.g., YouTube, TikTok, Behance}
+(only include if present)
 
 ══════════════════════════════
 SUMMARY:
 {Artist Summary (AI)}
-
-══════════════════════════════
-TAGS:
-{AI Tags}
 ```
 
 ### Groups Field (col 30)
@@ -75,7 +76,9 @@ Title (2), Birth Date (4), Death Date (5), Secondary Email (7), Phone (8)*, Mobi
 
 ---
 
-## Artwork Mappings (AA has 64 columns)
+## Artwork Mappings (AA has 68 columns)
+
+> Rebuilt 2026-03-18 from AA-Artworks-Template.xlsx. Previous version had 63 columns — indices were off from col 10 onward.
 
 ### Direct Mappings
 
@@ -85,28 +88,29 @@ Title (2), Birth Date (4), Death Date (5), Secondary Email (7), Phone (8)*, Mobi
 | 1 | Artist First Name | `First Name (from Artist)` | none | | Lookup |
 | 2 | Artist Last Name | `Last Name (from Artist)` | none | | Lookup |
 | 5 | Type | `Type` | validate against AA enum | | Book, Ceramics, Collage, Digital, Drawing, Fiber, Film/Video, Furniture, Garment, Glass, Illustration, Installation, Jewelry, Metalworks, Mixed Media, Mosaic, Mural, New Media, Other, Painting, Performance, Photography, Print, Sculpture, Textile, Wood, Works on Paper |
-| 6 | Status | (mapped from Airtable status) | status mapping | | "Pending - Enriched" / "Approved" → "available" |
-| 7 | Height | `Height (AI)` | number → string, 0 → "" | | AI-extracted from Description |
-| 8 | Width | `Width (AI)` | number → string, 0 → "" | | AI-extracted from Description |
-| 9 | Depth | `Depth (AI)` | number → string, 0 → "" | | AI-extracted from Description |
-| 20 | Creation Date | `Year Created Date` | pass through | | Usually yyyy format |
-| 23 | Description | `Description` | none | | Artist-entered |
-| 61 | Piece Image URL | `Piece Image URLs` | `pipe_separate` | | Use Paperform S3/CDN URL — NEVER Airtable thumbnail |
-| 62 | Artist Email | `Artist Email` | none | | |
+| 6 | Status | (mapped from Airtable status) | status mapping | | "Approved for Export" → "available" |
+| 7 | Height | `Height (AI)` | `dimension_format` | | AI-extracted from Description |
+| 8 | Width | `Width (AI)` | `dimension_format` | | AI-extracted from Description |
+| 9 | Depth | `Depth (AI)` | `dimension_format` | | AI-extracted from Description |
+| 22 | Creation Date | `Year Created Date` | `date_format` | | Usually yyyy format |
+| 25 | Description | `Description` | none | | Artist-entered |
+| 66 | Piece Image URLs | `Piece Image URLs` | `pipe_separate` | | Use Paperform S3/CDN URL — NEVER Airtable thumbnail |
+| 67 | Additional File URLs | — | | | Left blank for now |
+| 67 | Artist Email | `Artist Email` | none | | **Note: AA template has Artist Email as a non-column identifier field appended after col 67** |
 
 ### Concatenation Mappings (artist value + AI appended)
 
 | # | AA Column | Airtable Sources | Strategy |
 |---|-----------|-----------------|----------|
 | 4 | Medium | `Medium` + `Medium (AI)` | `field_concatenate` — artist value first, append "\n\nAI ANALYSIS: {Medium (AI)}" if different |
-| 16 | Subject Matter | `Subject Matter` + `Subject Matter (AI)` | `field_concatenate` — same pattern |
+| 17 | Subject Matter | `Subject Matter` + `Subject Matter (AI)` | `field_concatenate` — same pattern |
 
 ### Transform Mappings
 
 | # | AA Column | Airtable Field | Transform | Notes |
 |---|-----------|---------------|-----------|-------|
-| 24 | Tags | `Tags (AI)` | `ai_tags` (dedup, sort) | **High value for curation** — searchable across 10K+ artworks |
-| 26 | Collections | (derived) | `collections_expand` | Campaign Name + Partner Org Name + Exhibition Year → hierarchy |
+| 26 | Tags | `Tags (AI)` | `ai_tags` (dedup, sort) | **High value for curation** — searchable across 10K+ artworks |
+| 28 | Collections | (derived) | `collections_expand` | Campaign Name + Partner Org Name + Exhibition Year → hierarchy |
 
 ### Collections Expansion
 
@@ -119,7 +123,7 @@ Year fallback chain: `Exhibition Open` date → `Date Imported` year → current
 
 Non-partner submissions get campaign name only (no org hierarchy).
 
-### Notes Field (col 25) — Concatenation
+### Notes Field (col 27) — Concatenation
 
 **Order:**
 ```
@@ -136,6 +140,7 @@ PURCHASE LINK:
 ### Dimensions
 
 - Source: `Height (AI)`, `Width (AI)`, `Depth (AI)` — number fields from AI extraction
+- Context: `Dimensions Unit (AI)` — used by `dimension_format` to convert cm→inches
 - AA default unit is inches. If `Dimensions Unit (AI)` is "cm", convert to inches at export
 - Zero values → empty string (not "0")
 - No evidence of decimal precision limits in AA
@@ -146,7 +151,7 @@ Always use `Piece Image URLs` field (Paperform S3/CDN, permanent). NEVER use `Pi
 
 ### Columns Left Blank
 
-Inventory Number (3), Paper Height/Width (10-11), Framed fields (12-15), Market/Wholesale/Insurance Value (17-19), Circa (21), Creation date override (22), Current Location fields (27-33), Sale/Donation/Gift fields (34-48), Signed fields (49-50), Edition fields (51-52), Appraisal fields (53-56), Condition fields (57-58), Weight (59), Provenance (60)
+Inventory Number (3), Dimension Override (10), Paper Height/Width (11-12), Framed fields (13-16), Price (18), Fair Market/Wholesale/Insurance Value (19-21), Circa (23), Creation date override (24), Current Location fields (29-36), Sale/Donation/Gift fields (37-52), Attribution Line (53), Signed fields (54-55), Edition fields (56-57), Appraisal fields (58-61), Condition fields (62-63), Weight (64), Provenance Info (65), Additional File URLs (67)
 
 ---
 

@@ -16,6 +16,7 @@ export interface MappingRow {
   notes: string | null
   defaultValue: string | null
   isMapped: boolean
+  isTransformInput: boolean
 }
 
 export const columns: ColumnDef<MappingRow>[] = [
@@ -33,7 +34,7 @@ export const columns: ColumnDef<MappingRow>[] = [
     ),
     cell: ({ row }) => (
       <span className="text-muted-foreground tabular-nums text-xs">
-        {row.getValue("aaColumnIndex")}
+        {row.original.isTransformInput ? "" : row.getValue("aaColumnIndex")}
       </span>
     ),
   },
@@ -49,11 +50,31 @@ export const columns: ColumnDef<MappingRow>[] = [
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const isMapped = row.original.isMapped
+      const isInput = row.original.isTransformInput
+      const aaCol = row.getValue("aaColumn") as string
+
+      if (isInput) {
+        // Count which input # this is among transform input rows only
+        const allRows = table.getCoreRowModel().rows
+        const inputSiblings = allRows.filter(
+          (r) =>
+            r.original.aaColumn === aaCol &&
+            r.original.entityType === row.original.entityType &&
+            r.original.isTransformInput
+        )
+        const idx = inputSiblings.findIndex((r) => r.id === row.id) + 1
+        return (
+          <span className="text-muted-foreground pl-4">
+            ↳ {aaCol} [{idx}/{inputSiblings.length}]
+          </span>
+        )
+      }
+
       return (
         <span className={isMapped ? "font-medium" : "text-muted-foreground"}>
-          {row.getValue("aaColumn")}
+          {aaCol}
         </span>
       )
     },

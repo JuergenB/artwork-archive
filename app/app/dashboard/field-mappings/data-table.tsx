@@ -131,7 +131,13 @@ export function DataTable({ columns, data }: DataTableProps) {
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className={row.original.isMapped ? "" : "opacity-50"}
+                  className={
+                    row.original.isTransformInput
+                      ? "bg-muted/30 border-l-2 border-l-amber-400"
+                      : row.original.isMapped
+                        ? ""
+                        : "opacity-50"
+                  }
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
