@@ -147,9 +147,9 @@ export function toArtwork(fields: Record<string, unknown>, id: string): Artwork 
     widthAi: asNumber(fields["Width (AI)"]),
     depthAi: asNumber(fields["Depth (AI)"]),
     dimensionsUnitAi: asString(fields["Dimensions Unit (AI)"]),
-    artistIds: asStringArray(fields["Artists"]),
-    campaignIds: asStringArray(fields["Campaigns"]),
-    campaignDescriptions: asString(fields["Campaign Descriptions (from Campaign)"]),
+    artistIds: asStringArray(fields["Artist"]),
+    campaignIds: asStringArray(fields["Campaign (Linked by Name)"]),
+    campaignDescriptions: asString(fields["Campaign Descriptions (from Campaign (Linked by Name))"]),
     linkToPurchaseUrl: asString(fields["Link to Purchase URL"]),
     artistEmail: asString(fields["Artist Email"]),
   }

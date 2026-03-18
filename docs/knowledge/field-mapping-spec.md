@@ -40,14 +40,14 @@ Assembled at export time via `notes_builder`. Never written back to Airtable.
 
 Social URLs now have dedicated AA columns (35-39) — removed from Notes builder.
 
-**Order:**
+**Order** (short predictable sections first, long AI content last):
 ```
 ARTIST STATEMENT:
 {Artist Statement}
 
 ══════════════════════════════
-ARTIST PROFILE:
-{Artist Profile (AI) — markdown stripped}
+SUMMARY (AI):
+{Artist Summary (AI)}
 
 ══════════════════════════════
 EXHIBITION HISTORY:
@@ -55,13 +55,18 @@ Participated in {Official Exhibition Name} presented by {Organization Name}
 (one line per campaign/partner)
 
 ══════════════════════════════
-ADDITIONAL SOCIAL PROFILES:
+ADDITIONAL SOCIAL PROFILES (AI):
 {Social Profiles (AI) — only platforms NOT covered by cols 35-39, e.g., YouTube, TikTok, Behance}
 (only include if present)
 
 ══════════════════════════════
-SUMMARY:
-{Artist Summary (AI)}
+TAGS (AI):
+{AI Tags}
+
+══════════════════════════════
+ARTIST PROFILE (AI):
+{Artist Profile (AI) — markdown stripped}
+(longest section — placed last so shorter sections are visible first)
 ```
 
 ### Groups Field (col 30)

@@ -346,6 +346,16 @@ export function notesBuilder(sections: NotesSection[]): string {
     if (section.stripMd) {
       content = stripMarkdown(content)
     }
+    // Strip if the content is just the heading repeated (with or without colon/case variation)
+    const headingNorm = section.heading.replace(/\s*\(AI\)/i, "").trim().toLowerCase()
+    const contentNorm = content.replace(/[:\s]+$/, "").trim().toLowerCase()
+    if (contentNorm === headingNorm) continue
+    // Strip leading line if it duplicates the heading (e.g., user typed "Artist Statement:\n...")
+    const lines = content.split("\n")
+    if (lines[0].replace(/[:\s]+$/, "").trim().toLowerCase() === headingNorm) {
+      content = lines.slice(1).join("\n").trim()
+      if (!content) continue
+    }
     parts.push(`${section.heading}:\n${content}`)
   }
 
@@ -366,11 +376,11 @@ export interface ArtistNotesContext {
 export function buildArtistNotes(ctx: ArtistNotesContext): string {
   return notesBuilder([
     { heading: "ARTIST STATEMENT", content: ctx.artistStatement },
-    { heading: "ARTIST PROFILE", content: ctx.profileAi, stripMd: true },
+    { heading: "SUMMARY (AI)", content: ctx.summaryAi },
     { heading: "EXHIBITION HISTORY", content: ctx.exhibitionHistory },
-    { heading: "SOCIAL PROFILES", content: ctx.socialProfiles },
-    { heading: "SUMMARY", content: ctx.summaryAi },
-    { heading: "TAGS", content: ctx.tagsAi },
+    { heading: "ADDITIONAL SOCIAL PROFILES (AI)", content: ctx.socialProfiles },
+    { heading: "TAGS (AI)", content: ctx.tagsAi },
+    { heading: "ARTIST PROFILE (AI)", content: ctx.profileAi, stripMd: true },
   ])
 }
 
@@ -390,7 +400,7 @@ export function buildArtworkNotes(ctx: ArtworkNotesContext): string {
       : null
 
   return notesBuilder([
-    { heading: "EXHIBITION FIT", content: relevance },
+    { heading: "EXHIBITION FIT (AI)", content: relevance },
     { heading: "PURCHASE LINK", content: ctx.linkToPurchaseUrl },
   ])
 }
