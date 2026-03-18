@@ -2,7 +2,7 @@
 
 ## Architecture
 - **Intake + Enrichment**: n8n workflow nodes + Airtable (no application code)
-- **Export Utility (Phase C)**: Next.js 16 + Auth.js + shadcn/ui app in `/app` directory, deployed on Vercel. Uses Airtable as sole database (including field mappings). Epic #74.
+- **Export Utility (Phase C)**: Next.js 16 + Auth.js + shadcn/ui app in `/app` directory, deployed on Vercel. Uses Airtable as sole database (including field mappings and user auth). Epic #74.
 - n8n instance: https://polymash.app.n8n.cloud
 - Airtable base: `appDFU2JdAw2Ckax4` (AA Rolling Submissions)
 - Airtable PAT stored in project `.env`
@@ -15,7 +15,30 @@
 - **Social Profile Discovery V1.0** (`mRgdgMZTjamxK6S9`) — Inactive (new, 2026-03-16). Standalone workflow: Firecrawl website link scrape + Perplexity deep-research → GPT-4.1 validation → Social Profiles (AI) field. Triggered as control panel action. Issue #56.
 - **Error Handler V1.0** (`iAGcwyumKEOc83kj`) — Inactive
 
-## Key Decisions
+## Phase C Export — Key Decisions (2026-03-17)
+- **Field mapping spec**: `docs/knowledge/field-mapping-spec.md` — consolidated build reference for all AA mappings
+- **Transforms**: 13 total — state_abbreviation, url_validate, social_media_profile, title_case (addresses only, never names — #57), phone_normalize, pipe_separate, dimension_format, date_format, strip_markdown, ai_tags, notes_builder, field_concatenate, collections_expand
+- **Write-back toggle**: Per-field checkbox on Field Mappings table. When checked + transform active, writes transformed value back to Airtable source during export. Safe: state/title_case/phone/social/url. Export-only: pipe_separate/dimension/notes_builder/field_concatenate/collections_expand/ai_tags/strip_markdown.
+- **Notes field concatenation**: Artist Notes = Statement → Profile (AI) → Exhibition History → Social Profiles → Summary → Tags. Artwork Notes = Exhibition Fit → Purchase Link. Export-only, never write back.
+- **Medium/Subject Matter**: Concatenate artist-submitted + AI analysis (append "\n\nAI ANALYSIS: {AI value}" if different). `field_concatenate` transform.
+- **Tags**: AA artwork template HAS a Tags column — use it directly (`ai_tags` transform). High value for curation. AA artist template has NO tags column — artist tags go in Notes.
+- **Collections expansion**: 3 levels — campaign name + org+year + org all-time. Year from `Exhibition Open` date on Campaign, fallback to Date Imported.
+- **Image URLs**: ALWAYS use Paperform S3/CDN URLs (`Piece Image URLs`, `Contact Image URL`). NEVER Airtable attachment thumbnails (expire in hours).
+- **Partner org data**: Code-level joins at export time (Artwork → Campaign → Partner Org). No Airtable Lookups.
+- **Dimensions**: Plain mapping from Height/Width/Depth (AI). Zero → empty string. Convert cm → inches if Dimensions Unit (AI) is "cm".
+- **Auth**: Users stored in Airtable (email, hashed password, role: admin/curator/viewer). Auth.js Credentials provider.
+- **Multi-source profiles**: Deferred to Phase D (#87). Build for our Airtable first, refactor for multiple sources later.
+
+## Phase C Export — Workflow
+- Curator (Kirsten) reviews enriched records in Airtable Interface
+- Curator approves records for export (need status between "Pending - Enriched" and "Exported")
+- Export triggered via Airtable button/webhook or web UI
+- Pipeline: load mappings → fetch approved records → apply transforms → generate CSVs → write back → upload files → log export → send email
+- Email to Kirsten with counts + CSV download links
+- Kirsten reviews, forwards to AA team (Justin) with links
+- CSVs need public/shareable URLs (too large for email attachment)
+
+## Key Decisions (n8n/enrichment — pre Phase C)
 - **Perplexity model**: `sonar-deep-research` is required. `sonar-pro` hallucinated citations badly (Yayoi Kusama links for unrelated artists). Fixed in V0.6. See [enrichment-history.md](enrichment-history.md).
 - **Citation validation**: AI-powered (GPT-4o-mini, temp 0.1) — evaluates each citation against artist identity anchors (email domain, website domain, location). Replaced V0.6 Code node string matching in V0.7.
 - **Pre-process submission**: Code node detects gibberish (lorem ipsum), extracts identity anchors, computes data quality score (0-10). Added in V0.7 to handle common names + poor submissions.
@@ -27,7 +50,7 @@
 - **Airtable linked record append pattern**: When upserting linked records (e.g., Campaigns on Artist), must concat existing array + new ID and deduplicate. Expression: `($('SearchNode').item.json.Field || []).concat([newId]).filter(function(v,i,a){return a.indexOf(v)===i})`. Fixed in V1.3 (#52).
 - **Code node audit (2026-03-11)**: 12 Code nodes across both workflows reviewed. Findings: 4 justified (Pre-Process Submission, Normalize Fields by Key, Detect Artworks, Resolve Tags), 4 need staticData so must stay as Code (Artist Progress, Artwork Progress, Finalize Run, Prepare Run Metadata — though Prepare Run Metadata is replaceable with Set), 3 replaceable with native nodes (Extract AC List IDs, Extract Tags to Add, Restore Artist Data via architecture change). 2 pairedItem bugs found and fixed. See #55.
 - **Dimension extraction**: LLM (GPT-4o-mini, temp 0) chosen over regex. Dimension formats have massive long tail (spelled-out numbers, mixed units, fractions, varying separators). Values stored in original units, no conversion. Assumes inches if unspecified. Fields renamed Height/Width/Depth → Height (AI)/Width (AI)/Depth (AI) + new Dimensions Unit (AI). Implemented V0.10 (#72).
-- **Campaigns table ID**: `tblr0oR74rtvR6LN2` — added Embed Code (formula) and Exhibition URL fields (#59, closed)
+- **Campaigns table ID**: `tblr0oR74rtvR6LN2` — 24 fields including Exhibition Open/Close dates, Official Exhibition Name, Exhibition Venue/Address/URL
 
 ## Model Evaluation Queue (low priority — current setup works, volume is ~10-15 submissions/month)
 - `sonar-reasoning-pro` — chain-of-thought reasoning, faster than deep-research, citation tokens not billed. Untested.
@@ -38,11 +61,13 @@
 ## Project Phases — see `docs/phases/` for full details
 - **Phase A (done)**: [phase-a-foundation.md](../../docs/phases/phase-a-foundation.md) — Intake V1.0, Enrichment V0.8, schema docs, .env
 - **Phase B (complete)**: [phase-b-operations-hub.md](../../docs/phases/phase-b-operations-hub.md) — Pipeline Actions + Pipeline Runs tables, 13 pipeline tracking nodes in Enrichment V0.8, documentation. All issues #33-44 closed. Airtable Interface panels remain manual work (no API).
-- **Phase C (in progress)**: Next.js export utility app in `/app` directory. Pivoted from n8n workflow due to systemic MCP issues. Epic #74, 10 sub-issues (#75-#84). Tech: Next.js 16, Auth.js 5, Airtable SDK, shadcn/ui, Vercel. Field mapping decisions (#84) can proceed in parallel with development.
-- **Phase D (backlog)**: [phase-d-future-improvements.md](../../docs/phases/phase-d-future-improvements.md) — Tech debt, model evaluation, Slack, analytics
+- **Phase C (in progress)**: Next.js export utility app in `/app` directory. Pivoted from n8n workflow due to systemic MCP issues. Epic #74, sub-issues #75-#84, mapping analysis #86, multi-source #87. Field mapping spec consolidated in `docs/knowledge/field-mapping-spec.md`.
+- **Phase D (backlog)**: [phase-d-future-improvements.md](../../docs/phases/phase-d-future-improvements.md) — Tech debt, model evaluation, Slack, analytics, multi-source mapping profiles (#87)
 
 ## User Preferences
 - Client is Scott Power (Scott "Salvador" Power) — owner of Not Real Art and Arterial (501c3)
+- **Kirsten Bengtson-Lykoudis** — curator/team member, primary daily user of export utility. Reviews and approves artists/artworks in Airtable, triggers exports, forwards CSV links to AA team.
+- **Justin** — CEO of Artwork Archive, receives export files from Kirsten. Scott has a personal relationship with him.
 - User prefers phased approach, local documentation, discussion before big changes
 - User timezone: America/New_York (Eastern Time)
 - Pre-approved CLI tools: git, gh, npm, npx, node, python3, supabase, vercel, curl, jq
@@ -51,7 +76,12 @@
 - **Epic issues have a mixed audience.** Non-technical stakeholders (CEO, partner org leaders) read epics too. Always lead with a **Purpose** section (why we're doing this, what problem it solves) and a **What This Enables** section (concrete benefits in plain language) before any architecture or technical details. Sub-issues can be fully technical.
 - **Keep README.md current.** When creating or updating epics/sub-issues, do a relevance check on `README.md` and update it if the changes affect project scope, phases, architecture, workflows, or AI models. The repo README is the public-facing overview and must always reflect the current state of the project.
 
+## Feedback
+- [Issue closure checklist](memory/feedback_issue_closure_checklist.md) — Always re-read GitHub issues before closing to verify all tasks complete
+
 ## References
+- [Field mapping spec](../../docs/knowledge/field-mapping-spec.md) — consolidated AA export mapping reference
+- [Sample export data](../../docs/knowledge/artwork%20archive%20example%20data/) — 20 curated artist records + 95 artworks from successful AA upload (~Aug 2024)
 - [Firecrawl Web Scraping](memory/reference_firecrawl.md) — n8n credential, sub-workflow, project usage. Full docs in global CLAUDE.md.
 - [n8n API workflow creation gotcha](memory/gotcha_n8n_api_workflow_creation.md) — Known n8n bug: API-created workflows render blank in UI. Clone-and-modify pattern is the workaround.
 - **n8n-skills installed** (2026-03-16): 7 skills from `czlonkowski/n8n-skills` at `~/.claude/skills/` — n8n-mcp-tools-expert, n8n-workflow-patterns, n8n-node-configuration, n8n-validation-expert, n8n-expression-syntax, n8n-code-javascript, n8n-code-python
