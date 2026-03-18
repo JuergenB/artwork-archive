@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { Zap } from "lucide-react"
+import { Archive } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,13 +21,13 @@ export default function LoginPage() {
 
     const form = new FormData(e.currentTarget)
     const result = await signIn("credentials", {
-      username: form.get("username"),
+      email: form.get("email"),
       password: form.get("password"),
       redirect: false,
     })
 
     if (result?.error) {
-      setError("Invalid username or password.")
+      setError("Invalid email or password.")
       setLoading(false)
     } else {
       router.push("/dashboard/home")
@@ -40,22 +40,20 @@ export default function LoginPage() {
         <CardHeader className="text-center space-y-3">
           <div className="flex justify-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Zap className="h-6 w-6" />
+              <Archive className="h-6 w-6" />
             </div>
           </div>
-          <CardTitle className="text-xl">
-            {process.env.NEXT_PUBLIC_APP_NAME || "My App"}
-          </CardTitle>
+          <CardTitle className="text-xl">AA Export</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                name="username"
-                type="text"
-                autoComplete="username"
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
                 required
               />
             </div>
@@ -73,7 +71,7 @@ export default function LoginPage() {
               <p className="text-sm text-destructive">{error}</p>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
         </CardContent>

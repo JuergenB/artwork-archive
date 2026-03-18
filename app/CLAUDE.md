@@ -1,4 +1,4 @@
-# [Project Name] — Standing Instructions
+# AA Export — Standing Instructions
 
 ## Rule 1: Read code before answering
 
@@ -11,10 +11,10 @@
 **At the start of every session, run this first — before anything else:**
 
 ```bash
-gh issue list --repo [OWNER]/[REPO] --state open --limit 100
+gh issue list --repo JuergenB/artwork-archive --state open --limit 100
 ```
 
-**When a design or feature is discussed:** Create a GitHub issue immediately with the full spec. Design documents belong in GitHub Issues, not in conversation history. Conversation history is lost when context compresses. GitHub Issues are permanent.
+**When a design or feature is discussed:** Create a GitHub issue immediately with the full spec. Design documents belong in GitHub Issues, not in conversation history.
 
 **When closing an issue:** Add a comment summarising what was built and which files changed.
 
@@ -22,7 +22,7 @@ gh issue list --repo [OWNER]/[REPO] --state open --limit 100
 
 ## Rule 3: Internal docs first
 
-The `docs/` folder contains all curated knowledge. Read it before any web search.
+The `docs/` folder (in project root) contains all curated knowledge. Read it before any web search.
 
 ---
 
@@ -35,33 +35,43 @@ Airtable tables/fields: use the Metadata API directly, never ask the user to cre
 
 ## Rule 5: Execute ALL user instructions in a single pass
 
-When the user gives multiple instructions in one message (e.g., "move X above Y, left-align Z, make W more subtle"), implement ALL of them before responding. Do not skip any. If you're unsure about one, implement the ones you understand and ask about the ambiguous one — but never silently drop instructions.
+When the user gives multiple instructions in one message, implement ALL of them before responding. Do not skip any.
 
 ---
 
 ## Dev Environment
 
-- **Port:** [PORT] (`npm run dev`)
-- **Stack:** Next.js App Router, TypeScript, Tailwind v4, Airtable, shadcn/ui
-- **Auth:** NextAuth custom credentials | `AUTH_USERS` env: `id:email:password:Display Name` comma-separated
-- **Repo:** github.com/[OWNER]/[REPO]
-- **User Timezone:** America/New_York (Eastern Time). Convert all API/UTC timestamps to ET before discussing with user.
+- **Port:** 3015 (`npm run dev`)
+- **Stack:** Next.js 16, TypeScript, Tailwind v4, Airtable SDK 0.12.2, shadcn/ui, Auth.js 5
+- **Auth:** NextAuth Credentials provider | `AUTH_USERS` env: `id:email:password:displayName:role` comma-separated
+- **Repo:** github.com/JuergenB/artwork-archive
+- **User Timezone:** America/New_York (Eastern Time)
 
 ---
 
 ## Key Files
 
-<!-- List architecturally significant files here as the project grows. Examples: -->
-<!-- - `lib/airtable/client.ts` — lazy init, all CRUD -->
-<!-- - `app/api/...` — API routes -->
-<!-- - `components/...` — key UI components -->
+- `auth.ts` — Auth.js 5 config (email + password, role in JWT)
+- `lib/airtable/client.ts` — Lazy-init Airtable client, fetchAll<T>, fetchById<T>, typed transforms
+- `lib/types.ts` — All domain types (Artist, Artwork, Campaign, PartnerOrg, FieldMapping, ExportLog, User)
+- `types/next-auth.d.ts` — Session type extension (displayName, role)
+- `components/app-sidebar.tsx` — Sidebar navigation
 
 ---
 
 ## Airtable
 
-- **Base ID:** [BASE_ID]
-- **Tables:** [list tables as they are created]
+- **Base ID:** `appDFU2JdAw2Ckax4` (AA Rolling Submissions)
+- **Tables:**
+  - Artists: `tblZZS5EeWmxmyCTB`
+  - Artworks: `tblh3npWVZgkWSILm`
+  - Campaigns: `tblr0oR74rtvR6LN2`
+  - Partner Organizations: `tbl0GhG4KxfuYDKaE`
+  - Pipeline Actions: `tblPLE3Kt16Blqsjr`
+  - Pipeline Runs: `tblhF8aI7tf2wPWyo`
+  - Field Mappings: TBD
+  - Export Logs: TBD
+  - Users: TBD
 - **API key** is in `.env.local`. Use Bash+curl for all schema changes — NEVER ask the user to edit Airtable manually.
 - **Metadata API:** `GET/PATCH https://api.airtable.com/v0/meta/bases/{baseId}/tables` — bearer auth with `AIRTABLE_API_KEY`.
 
@@ -70,8 +80,9 @@ When the user gives multiple instructions in one message (e.g., "move X above Y,
 ## Key Architectural Rules
 
 - Airtable client is lazy-init (env checked at query time, not import)
-- AI prompts must inject knowledge docs from `lib/ai/knowledge.ts` if model lacks domain data
-- [Add project-specific rules as they emerge]
+- Image URLs must use Paperform S3/CDN URLs (permanent). Never Airtable attachment thumbnails (expire).
+- Transforms are self-contained — no chaining needed
+- `title_case` is for addresses only — never artist names
 
 ---
 

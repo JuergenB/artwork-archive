@@ -9,8 +9,8 @@ const geistSans = Geist({
 })
 
 export const metadata: Metadata = {
-  title: process.env.NEXT_PUBLIC_APP_NAME || "My App",
-  description: "Built on the Polymash stack",
+  title: "AA Export",
+  description: "Artwork Archive export utility",
 }
 
 export default function RootLayout({

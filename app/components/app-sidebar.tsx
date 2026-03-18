@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, LogOut } from "lucide-react"
+import { Home, Play, TableProperties, FileText, LogOut } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { signOut, useSession } from "next-auth/react"
@@ -32,6 +32,9 @@ const navItems = [
     label: "Navigation",
     items: [
       { title: "Home", href: "/dashboard/home", icon: Home },
+      { title: "Run Export", href: "/dashboard/export", icon: Play },
+      { title: "Field Mappings", href: "/dashboard/field-mappings", icon: TableProperties },
+      { title: "Export Logs", href: "/dashboard/export-logs", icon: FileText },
     ],
   },
 ]

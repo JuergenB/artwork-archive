@@ -1,30 +1,43 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import type { UserRole } from "@/lib/types"
 
 const users = (process.env.AUTH_USERS || "")
   .split(",")
   .filter(Boolean)
   .map((entry) => {
-    const [id, username, password] = entry.split(":")
-    return { id, username, password }
+    const [id, email, password, displayName, role] = entry.split(":")
+    return {
+      id,
+      email,
+      password,
+      displayName: displayName?.trim() || email?.split("@")[0] || "User",
+      role: (role?.trim() as UserRole) || "viewer",
+    }
   })
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: {
-        username: { label: "Username", type: "text" },
+        email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) return null
+        if (!credentials?.email || !credentials?.password) return null
         const user = users.find(
           (u) =>
-            u.username === credentials.username &&
+            u.email === credentials.email &&
             u.password === credentials.password
         )
         if (!user) return null
-        return { id: user.id, name: user.username, email: user.username }
+        return {
+          id: user.id,
+          name: user.displayName,
+          email: user.email,
+          displayName: user.displayName,
+          role: user.role,
+        }
       },
     }),
   ],
@@ -32,6 +45,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.displayName = (user as { displayName?: string }).displayName
+        token.role = (user as { role?: string }).role
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (token.displayName) {
+        session.user.displayName = token.displayName as string
+      }
+      if (token.role) {
+        session.user.role = token.role as UserRole
+      }
+      return session
+    },
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
       const isLoginPage = nextUrl.pathname === "/login"
