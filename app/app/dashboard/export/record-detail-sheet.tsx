@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import type { Artist, Artwork } from "@/lib/types"
+import type { ExportPreviewArtist, ExportPreviewArtwork } from "@/app/api/export/preview/route"
 import { buildArtistNotes, buildArtworkNotes } from "@/lib/export/transforms"
 
 // ─── Field Display Helper ────────────────────────────────
@@ -26,7 +27,7 @@ function Field({
   if (!value && value !== 0) return null
   const display = String(value)
   return (
-    <div className="py-1.5">
+    <div className="py-3">
       <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
         {label}
       </dt>
@@ -48,13 +49,36 @@ function Field({
   )
 }
 
+/** Like Field but shows empty values with a dash — useful for showing all AA export columns */
+function FieldOrEmpty({
+  label,
+  value,
+  isUrl,
+}: {
+  label: string
+  value: string | number | null | undefined
+  isUrl?: boolean
+}) {
+  if (!value && value !== 0) {
+    return (
+      <div className="py-3">
+        <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          {label}
+        </dt>
+        <dd className="mt-0.5 text-sm text-muted-foreground/50">—</dd>
+      </div>
+    )
+  }
+  return <Field label={label} value={value} isUrl={isUrl} />
+}
+
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <div className="pt-4 pb-1">
-      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+    <div className="pt-8 pb-2">
+      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
         {children}
       </h3>
-      <Separator className="mt-1" />
+      <Separator className="mt-2" />
     </div>
   )
 }
@@ -67,8 +91,8 @@ export function ArtistDetailSheet({
   open,
   onOpenChange,
 }: {
-  artist: Artist | null
-  artworks: Artwork[]
+  artist: (Artist & { groups?: string; exhibitionHistory?: string }) | null
+  artworks: (Artwork & { collections?: string })[]
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
@@ -78,13 +102,13 @@ export function ArtistDetailSheet({
     .filter(Boolean)
     .join(", ")
 
-  const socialLinks = [
+  const socialFields = [
     { label: "Instagram", value: artist.instagramUrl },
     { label: "Facebook", value: artist.facebookUrl },
     { label: "Twitter / X", value: artist.twitterUrl },
     { label: "LinkedIn", value: artist.linkedinUrl },
     { label: "Pinterest", value: artist.pinterestUrl },
-  ].filter((s) => s.value)
+  ]
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -116,6 +140,7 @@ export function ArtistDetailSheet({
         <div className="space-y-0 pb-8">
           <SectionHeading>Contact</SectionHeading>
           <Field label="Email" value={artist.email} />
+          <FieldOrEmpty label="Phone" value={artist.phone} />
           <Field label="Website" value={artist.website} isUrl />
           <Field label="Primary Address" value={artist.primaryAddress} />
           {artist.address2 && <Field label="Address 2" value={artist.address2} />}
@@ -126,19 +151,16 @@ export function ArtistDetailSheet({
               .join(", ")}
           />
           <Field label="Nationality" value={artist.nationality} />
+          <Field label="Groups (AA)" value={artist.groups} />
 
-          {socialLinks.length > 0 && (
-            <>
-              <SectionHeading>Social Media</SectionHeading>
-              {socialLinks.map((s) => (
-                <Field key={s.label} label={s.label} value={s.value} isUrl />
-              ))}
-            </>
-          )}
+          <SectionHeading>Social Media</SectionHeading>
+          {socialFields.map((s) => (
+            <FieldOrEmpty key={s.label} label={s.label} value={s.value} isUrl />
+          ))}
 
           <SectionHeading>Bio &amp; Statement</SectionHeading>
           {artist.bio && (
-            <div className="py-1.5">
+            <div className="py-3">
               <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Bio
               </dt>
@@ -148,7 +170,7 @@ export function ArtistDetailSheet({
             </div>
           )}
           {artist.artistStatement && (
-            <div className="py-1.5">
+            <div className="py-3">
               <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Artist Statement
               </dt>
@@ -162,7 +184,7 @@ export function ArtistDetailSheet({
             <>
               <SectionHeading>AI Enrichment</SectionHeading>
               {artist.summaryAi && (
-                <div className="py-1.5">
+                <div className="py-3">
                   <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Summary
                   </dt>
@@ -172,7 +194,7 @@ export function ArtistDetailSheet({
                 </div>
               )}
               {artist.tagsAi && (
-                <div className="py-1.5">
+                <div className="py-3">
                   <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Tags (AI)
                   </dt>
@@ -186,7 +208,7 @@ export function ArtistDetailSheet({
                 </div>
               )}
               {artist.profileAi && (
-                <div className="py-1.5">
+                <div className="py-3">
                   <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     AI Profile
                   </dt>
@@ -203,12 +225,12 @@ export function ArtistDetailSheet({
 
           {/* Notes Preview */}
           <SectionHeading>Notes Preview (Export)</SectionHeading>
-          <div className="py-1.5">
+          <div className="py-3">
             <dd className="text-sm whitespace-pre-line leading-relaxed bg-muted/50 rounded-lg p-3 max-h-64 overflow-y-auto font-mono text-xs">
               {buildArtistNotes({
                 artistStatement: artist.artistStatement,
                 profileAi: artist.profileAi,
-                exhibitionHistory: null, // TODO: requires Campaign → Partner Org join (#79)
+                exhibitionHistory: artist.exhibitionHistory ?? null,
                 socialProfiles: artist.socialProfilesAi,
                 summaryAi: artist.summaryAi,
                 tagsAi: artist.tagsAi,
@@ -265,7 +287,7 @@ export function ArtworkDetailSheet({
   open,
   onOpenChange,
 }: {
-  artwork: Artwork | null
+  artwork: (Artwork & { collections?: string }) | null
   artistName?: string | null
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -305,41 +327,11 @@ export function ArtworkDetailSheet({
         )}
 
         <div className="space-y-0 pb-8">
-          {/* Notes Preview */}
-          {(() => {
-            const notes = buildArtworkNotes({
-              relevanceHypothesisAi: artwork.relevanceHypothesisAi,
-              linkToPurchaseUrl: artwork.linkToPurchaseUrl,
-            })
-            return notes ? (
-              <>
-                <SectionHeading>Notes Preview (Export)</SectionHeading>
-                <div className="py-1.5">
-                  <dd className="text-sm whitespace-pre-line leading-relaxed bg-muted/50 rounded-lg p-3 max-h-48 overflow-y-auto font-mono text-xs">
-                    {notes}
-                  </dd>
-                </div>
-              </>
-            ) : null
-          })()}
-
-          <SectionHeading>Details</SectionHeading>
-          <Field label="Type" value={artwork.type} />
-          <Field label="Medium" value={artwork.medium} />
-          <Field label="Subject Matter" value={artwork.subjectMatter} />
-          {dimensions && (
-            <Field
-              label="Dimensions"
-              value={`${dimensions}${artwork.dimensionsUnitAi ? ` ${artwork.dimensionsUnitAi}` : ""}`}
-            />
-          )}
-          <Field label="Year Created" value={artwork.yearCreatedDate} />
-          <Field label="Price" value={artwork.linkToPurchaseUrl} isUrl />
-
+          {/* Artist-entered fields first */}
           {artwork.description && (
             <>
               <SectionHeading>Description</SectionHeading>
-              <div className="py-1.5">
+              <div className="py-3">
                 <dd className="text-sm whitespace-pre-line leading-relaxed">
                   {artwork.description}
                 </dd>
@@ -347,13 +339,28 @@ export function ArtworkDetailSheet({
             </>
           )}
 
-          {(artwork.mediumAi || artwork.subjectMatterAi || artwork.tagsAi || artwork.relevanceHypothesisAi) && (
+          <SectionHeading>Details</SectionHeading>
+          <Field label="Type" value={artwork.type} />
+          <Field label="Medium" value={artwork.medium} />
+          <Field label="Subject Matter" value={artwork.subjectMatter} />
+          <Field label="Year Created" value={artwork.yearCreatedDate} />
+          <Field label="Collections (AA)" value={artwork.collections} />
+          <Field label="Purchase Link" value={artwork.linkToPurchaseUrl} isUrl />
+
+          {/* AI-generated fields — clearly labeled */}
+          {(artwork.mediumAi || artwork.subjectMatterAi || artwork.tagsAi || artwork.relevanceHypothesisAi || dimensions) && (
             <>
               <SectionHeading>AI Enrichment</SectionHeading>
+              {dimensions && (
+                <Field
+                  label="Dimensions (AI)"
+                  value={`${dimensions}${artwork.dimensionsUnitAi ? ` ${artwork.dimensionsUnitAi}` : ""}`}
+                />
+              )}
               <Field label="Medium (AI)" value={artwork.mediumAi} />
               <Field label="Subject Matter (AI)" value={artwork.subjectMatterAi} />
               {artwork.tagsAi && (
-                <div className="py-1.5">
+                <div className="py-3">
                   <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Tags (AI)
                   </dt>
@@ -368,7 +375,7 @@ export function ArtworkDetailSheet({
               )}
               {artwork.relevanceHypothesisAi &&
                 artwork.relevanceHypothesisAi.toUpperCase() !== "SKIP" && (
-                  <div className="py-1.5">
+                  <div className="py-3">
                     <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       Exhibition Fit (AI)
                     </dt>
@@ -379,6 +386,24 @@ export function ArtworkDetailSheet({
                 )}
             </>
           )}
+
+          {/* Notes preview last */}
+          {(() => {
+            const notes = buildArtworkNotes({
+              relevanceHypothesisAi: artwork.relevanceHypothesisAi,
+              linkToPurchaseUrl: artwork.linkToPurchaseUrl,
+            })
+            return notes ? (
+              <>
+                <SectionHeading>Notes Preview (Export)</SectionHeading>
+                <div className="py-3">
+                  <dd className="text-sm whitespace-pre-line leading-relaxed bg-muted/50 rounded-lg p-3 max-h-48 overflow-y-auto font-mono text-xs">
+                    {notes}
+                  </dd>
+                </div>
+              </>
+            ) : null
+          })()}
         </div>
       </SheetContent>
     </Sheet>

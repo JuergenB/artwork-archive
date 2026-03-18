@@ -23,15 +23,15 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChevronDown, ChevronRight, Download, Eye, Users, ImageIcon } from "lucide-react"
 import type { Campaign, Artist, Artwork } from "@/lib/types"
-import type { ExportPreviewData } from "@/app/api/export/preview/route"
+import type { ExportPreviewData, ExportPreviewArtist, ExportPreviewArtwork } from "@/app/api/export/preview/route"
 import { ArtistDetailSheet, ArtworkDetailSheet } from "./record-detail-sheet"
 
 interface ExportPreviewProps {
   campaigns: Campaign[]
 }
 
-interface ArtistWithArtworks extends Artist {
-  relatedArtworks: Artwork[]
+interface ArtistWithArtworks extends ExportPreviewArtist {
+  relatedArtworks: ExportPreviewArtwork[]
 }
 
 export function ExportPreview({ campaigns }: ExportPreviewProps) {
@@ -41,7 +41,7 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
   const [expandedArtists, setExpandedArtists] = useState<Set<string>>(new Set())
   const [initialLoad, setInitialLoad] = useState(true)
   const [selectedArtist, setSelectedArtist] = useState<ArtistWithArtworks | null>(null)
-  const [selectedArtwork, setSelectedArtwork] = useState<{ artwork: Artwork; artistName: string | null } | null>(null)
+  const [selectedArtwork, setSelectedArtwork] = useState<{ artwork: ExportPreviewArtwork; artistName: string | null } | null>(null)
 
   // Load "All Campaigns" on mount
   useEffect(() => {
@@ -90,7 +90,7 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
   // Group artworks by artist
   function getArtistsWithArtworks(): ArtistWithArtworks[] {
     if (!previewData) return []
-    const artworksByArtist = new Map<string, Artwork[]>()
+    const artworksByArtist = new Map<string, ExportPreviewArtwork[]>()
     for (const aw of previewData.artworks) {
       for (const artistId of aw.artistIds) {
         const existing = artworksByArtist.get(artistId) ?? []
@@ -334,7 +334,7 @@ function ArtistRow({
   isExpanded: boolean
   onToggle: () => void
   onClickName: () => void
-  onClickArtwork: (aw: Artwork) => void
+  onClickArtwork: (aw: ExportPreviewArtwork) => void
 }) {
   const location = [artist.city, artist.state, artist.country]
     .filter(Boolean)
@@ -407,7 +407,7 @@ function ArtistRow({
 
 // ─── Artwork Row ─────────────────────────────────────────
 
-function ArtworkRow({ artwork, onClick }: { artwork: Artwork; onClick: () => void }) {
+function ArtworkRow({ artwork, onClick }: { artwork: ExportPreviewArtwork; onClick: () => void }) {
   // Get first image URL from pipe-separated list
   const firstImageUrl = artwork.pieceImageUrls?.split("|")[0]?.trim() ?? null
 

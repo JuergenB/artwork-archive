@@ -42,6 +42,7 @@ export interface Artist {
   nationality: string | null
   primaryAddress: string | null
   address2: string | null
+  phone: string | null
   website: string | null
   instagramUrl: string | null
   facebookUrl: string | null

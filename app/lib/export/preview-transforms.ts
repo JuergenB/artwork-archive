@@ -10,8 +10,6 @@ import {
   stateAbbreviation,
   urlValidate,
   socialMediaProfile,
-  dimensionFormat,
-  fieldConcatenate,
   aiTags,
 } from "./transforms"
 
@@ -40,13 +38,8 @@ export function transformArtistForPreview(artist: Artist): Artist {
 export function transformArtworkForPreview(artwork: Artwork): Artwork {
   return {
     ...artwork,
-    // Dimension transforms (for display — show in inches)
-    heightAi: artwork.heightAi,
-    widthAi: artwork.widthAi,
-    depthAi: artwork.depthAi,
-    // Concatenation transforms (show combined artist + AI values)
-    medium: fieldConcatenate(artwork.medium, artwork.mediumAi) || artwork.medium,
-    subjectMatter: fieldConcatenate(artwork.subjectMatter, artwork.subjectMatterAi) || artwork.subjectMatter,
+    // Keep original artist-submitted values for medium/subjectMatter
+    // The field_concatenate happens only at CSV export time
     // Tags
     tagsAi: aiTags(artwork.tagsAi),
   }

@@ -109,6 +109,7 @@ export function toArtist(fields: Record<string, unknown>, id: string): Artist {
     nationality: asString(fields["Nationality"]),
     primaryAddress: asString(fields["Primary Address"]),
     address2: asString(fields["Address 2"]),
+    phone: asString(fields["Phone"]),
     website: asString(fields["Website"]),
     instagramUrl: asString(fields["Instagram URL"]),
     facebookUrl: asString(fields["Facebook URL"]),
