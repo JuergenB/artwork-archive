@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const campaignId: string | undefined = body.campaignId
     const triggeredBy: string = body.triggeredBy ?? "Unknown"
+    const testMode: boolean = body.testMode === true
 
     // 1. Fetch all data in parallel
     const [rawArtists, rawArtworks, allCampaigns, allPartnerOrgs] = await Promise.all([
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Create Export Log with "In Progress" status
-    const exportId = `EXP-${Date.now()}`
+    const exportId = `${testMode ? "TEST" : "EXP"}-${Date.now()}`
     const exportLog = await createExportLog({
       "Export ID": exportId,
       "Timestamp": new Date().toISOString(),
@@ -68,11 +69,12 @@ export async function POST(request: NextRequest) {
       "Number of Artists Exported": String(artists.length),
       "Number of Artworks Exported": String(artworks.length),
       "Campaign Names Exported": campaignName,
-      "Export Type": campaignId && campaignId !== "all" ? "Campaign" : "Full",
+      "Export Type": testMode ? "Preview" : (campaignId && campaignId !== "all" ? "Campaign" : "Full"),
       "Campaign Filter": campaignId ?? "",
       "Triggered By": triggeredBy,
       "Artist Record IDs": artists.map((a) => a.id).join(","),
       "Artwork Record IDs": artworks.map((aw) => aw.id).join(","),
+      "Export Notes": testMode ? "Test export — Airtable records not updated" : "",
     })
     exportLogId = exportLog.id
 
@@ -93,10 +95,12 @@ export async function POST(request: NextRequest) {
       put(artistFileName, artistCsv, {
         access: "public",
         contentType: "text/csv",
+        addRandomSuffix: true,
       }),
       put(artworkFileName, artworkCsv, {
         access: "public",
         contentType: "text/csv",
+        addRandomSuffix: true,
       }),
     ])
 
@@ -126,14 +130,16 @@ export async function POST(request: NextRequest) {
       "Email Body": emailBody,
     })
 
-    // 9. Update artist/artwork statuses to "Exported"
-    const artistIds = artists.map((a) => a.id)
-    const artworkIds = artworks.map((aw) => aw.id)
+    // 9. Update artist/artwork statuses to "Exported" (skip in test mode)
+    if (!testMode) {
+      const artistIds = artists.map((a) => a.id)
+      const artworkIds = artworks.map((aw) => aw.id)
 
-    await Promise.all([
-      updateRecordStatuses("AIRTABLE_ARTISTS_TABLE_ID", artistIds, "Exported"),
-      updateRecordStatuses("AIRTABLE_ARTWORKS_TABLE_ID", artworkIds, "Exported"),
-    ])
+      await Promise.all([
+        updateRecordStatuses("AIRTABLE_ARTISTS_TABLE_ID", artistIds, "Exported"),
+        updateRecordStatuses("AIRTABLE_ARTWORKS_TABLE_ID", artworkIds, "Exported"),
+      ])
+    }
 
     return NextResponse.json({
       exportLogId: exportLog.id,
@@ -162,7 +168,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: "Failed to generate export" },
+      { error: "Failed to generate export", detail: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

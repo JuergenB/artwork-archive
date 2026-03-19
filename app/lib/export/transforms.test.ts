@@ -402,8 +402,8 @@ describe("stripMarkdown", () => {
     expect(stripMarkdown("This is *italic* text")).toBe("This is italic text")
   })
 
-  it("removes links, keeping text", () => {
-    expect(stripMarkdown("[Visit](https://example.com)")).toBe("Visit")
+  it("converts links to text with URL", () => {
+    expect(stripMarkdown("[Visit](https://example.com)")).toBe("Visit (https://example.com)")
   })
 
   it("removes inline code", () => {

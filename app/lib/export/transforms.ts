@@ -281,8 +281,8 @@ export function stripMarkdown(value: string | null | undefined): string {
       // Bold/italic
       .replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")
       .replace(/_{1,3}([^_]+)_{1,3}/g, "$1")
-      // Links [text](url) → text
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      // Links [text](url) → text (url)
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)")
       // Images ![alt](url) → alt
       .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
       // Inline code

@@ -42,6 +42,7 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
   const [initialLoad, setInitialLoad] = useState(true)
   const [selectedArtist, setSelectedArtist] = useState<ArtistWithArtworks | null>(null)
   const [selectedArtwork, setSelectedArtwork] = useState<{ artwork: ExportPreviewArtwork; artistName: string | null } | null>(null)
+  const [testMode, setTestMode] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [exportResult, setExportResult] = useState<{
     artistCsvUrl: string
@@ -100,10 +101,10 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
 
   async function handleExport() {
     if (!previewData || previewData.totalArtists === 0) return
-    if (!confirm(
-      `Export ${previewData.totalArtists} artists and ${previewData.totalArtworks} artworks?\n\n` +
-      `This will generate CSV files and mark all records as "Exported" in Airtable.`
-    )) return
+    const msg = testMode
+      ? `Test export: ${previewData.totalArtists} artists and ${previewData.totalArtworks} artworks.\n\nCSVs will be generated but Airtable records will NOT be updated.`
+      : `Export ${previewData.totalArtists} artists and ${previewData.totalArtworks} artworks?\n\nThis will generate CSV files and mark all records as "Exported" in Airtable.`
+    if (!confirm(msg)) return
 
     setExporting(true)
     setExportResult(null)
@@ -113,7 +114,8 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           campaignId: selectedCampaign,
-          triggeredBy: "Export UI",
+          triggeredBy: testMode ? "Test Export" : "Export UI",
+          testMode,
         }),
       })
       if (!res.ok) {
@@ -324,6 +326,17 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 {!exportResult ? (
+                  <div className="space-y-4">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer w-fit">
+                    <input
+                      type="checkbox"
+                      checked={testMode}
+                      onChange={(e) => setTestMode(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="font-medium">Test mode</span>
+                    <span className="text-muted-foreground">— generate CSVs without updating Airtable records</span>
+                  </label>
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
                       Generate Artwork Archive CSV files for{" "}
@@ -355,13 +368,19 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
                       )}
                     </Button>
                   </div>
+                  </div>
                 ) : (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
                       <Check className="h-5 w-5" />
                       <span className="font-medium">
-                        Export complete — {exportResult.artistCount} artists, {exportResult.artworkCount} artworks
+                        {testMode ? "Test export" : "Export"} complete — {exportResult.artistCount} artists, {exportResult.artworkCount} artworks
                       </span>
+                      {testMode && (
+                        <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                          Test Mode — Airtable not updated
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="flex gap-3">

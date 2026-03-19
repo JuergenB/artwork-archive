@@ -55,6 +55,7 @@ export function ExportLogsViewer() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [rejectNotes, setRejectNotes] = useState("")
   const [rejectingId, setRejectingId] = useState<string | null>(null)
+  const [hideTests, setHideTests] = useState(false)
 
   async function fetchLogs() {
     try {
@@ -131,6 +132,9 @@ export function ExportLogsViewer() {
     }
   }
 
+  const testCount = logs.filter((l) => l.exportType === "Preview").length
+  const filteredLogs = hideTests ? logs.filter((l) => l.exportType !== "Preview") : logs
+
   if (loading) {
     return <p className="text-muted-foreground">Loading export logs...</p>
   }
@@ -143,8 +147,35 @@ export function ExportLogsViewer() {
     )
   }
 
+  if (filteredLogs.length === 0) {
+    return (
+      <div className="space-y-4">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={hideTests} onChange={(e) => setHideTests(e.target.checked)} className="rounded" />
+          Hide test exports ({testCount})
+        </label>
+        <div className="rounded-lg border border-dashed p-12 text-center">
+          <p className="text-muted-foreground">No real exports yet — only test exports. Uncheck the filter above to see them.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
+      {testCount > 0 && (
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={hideTests}
+              onChange={(e) => setHideTests(e.target.checked)}
+              className="rounded"
+            />
+            Hide test exports ({testCount})
+          </label>
+        </div>
+      )}
       <Table>
         <TableHeader>
           <TableRow>
@@ -158,12 +189,17 @@ export function ExportLogsViewer() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {logs.map((log) => (
+          {filteredLogs.map((log) => (
             <TableRow key={log.id}>
               <TableCell className="whitespace-nowrap">
                 {formatTimestamp(log.timestamp)}
               </TableCell>
-              <TableCell>{log.campaignNames ?? "—"}</TableCell>
+              <TableCell>
+                <span>{log.campaignNames ?? "—"}</span>
+                {log.exportType === "Preview" && (
+                  <Badge variant="outline" className="ml-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-[10px] px-1.5 py-0">Test</Badge>
+                )}
+              </TableCell>
               <TableCell className="text-right">{log.artistCount ?? "0"}</TableCell>
               <TableCell className="text-right">{log.artworkCount ?? "0"}</TableCell>
               <TableCell>

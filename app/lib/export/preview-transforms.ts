@@ -10,6 +10,8 @@ import {
   stateAbbreviation,
   urlValidate,
   socialMediaProfile,
+  phoneNormalize,
+  nationalityNormalize,
   aiTags,
 } from "./transforms"
 
@@ -21,6 +23,9 @@ export function transformArtistForPreview(artist: Artist): Artist {
     address2: titleCase(artist.address2),
     city: titleCase(artist.city),
     state: stateAbbreviation(artist.state),
+    // Contact transforms
+    phone: phoneNormalize(artist.phone),
+    nationality: nationalityNormalize(artist.nationality),
     // URL transforms
     website: urlValidate(artist.website),
     contactImageUrl: artist.contactImageUrl, // Don't transform — used as image src
