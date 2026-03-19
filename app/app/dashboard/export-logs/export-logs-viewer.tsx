@@ -132,6 +132,29 @@ export function ExportLogsViewer() {
     }
   }
 
+  async function handleDelete(logId: string) {
+    const log = logs.find((l) => l.id === logId)
+    const hasBlobs = log?.artistCsvUrl || log?.artworkCsvUrl
+    const msg = hasBlobs
+      ? "Delete this export? This will permanently remove the CSV files from storage and the log entry from Airtable. This cannot be undone."
+      : "Delete this export log entry? This cannot be undone."
+    if (!confirm(msg)) return
+    setActionLoading(logId)
+    try {
+      const res = await fetch(`/api/export/${logId}/delete`, { method: "POST" })
+      if (res.ok) {
+        await fetchLogs()
+      } else {
+        const data = await res.json()
+        alert(data.error ?? "Failed to delete export")
+      }
+    } catch {
+      alert("Failed to delete export")
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   const testCount = logs.filter((l) => l.exportType === "Preview").length
   const filteredLogs = hideTests ? logs.filter((l) => l.exportType !== "Preview") : logs
 
@@ -305,6 +328,17 @@ export function ExportLogsViewer() {
                       {log.exportNotes}
                     </span>
                   )}
+
+                  {/* Delete — always available */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(log.id)}
+                    disabled={actionLoading === log.id}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    Delete
+                  </Button>
                 </div>
               </TableCell>
             </TableRow>
