@@ -186,10 +186,13 @@ export function buildArtworkCsvRow(artwork: EnrichedArtwork): string[] {
 /**
  * Generate a complete CSV string from headers and rows.
  */
+// UTF-8 BOM — tells Excel to read the file as UTF-8 instead of Latin-1
+const UTF8_BOM = "\uFEFF"
+
 export function generateCsv(headers: string[], rows: string[][]): string {
   const headerLine = rowToCsv(headers)
   const dataLines = rows.map(rowToCsv)
-  return [headerLine, ...dataLines].join("\n")
+  return UTF8_BOM + [headerLine, ...dataLines].join("\n")
 }
 
 /**

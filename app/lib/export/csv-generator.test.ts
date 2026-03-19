@@ -309,11 +309,15 @@ describe("generateCsv", () => {
         ["John Smith", "john@example.com", "Los Angeles"],
       ],
     )
-    const lines = csv.split("\n")
+    // Strip BOM for testing
+    const clean = csv.replace(/^\uFEFF/, "")
+    const lines = clean.split("\n")
     expect(lines).toHaveLength(3)
     expect(lines[0]).toBe("Name,Email,City")
     expect(lines[1]).toBe("Jane Doe,jane@example.com,New York")
     expect(lines[2]).toBe("John Smith,john@example.com,Los Angeles")
+    // Verify BOM is present
+    expect(csv.charCodeAt(0)).toBe(0xFEFF)
   })
 
   it("escapes fields with special characters", () => {
@@ -327,7 +331,7 @@ describe("generateCsv", () => {
 
   it("generates empty body with no rows", () => {
     const csv = generateCsv(["A", "B"], [])
-    expect(csv).toBe("A,B")
+    expect(csv.replace(/^\uFEFF/, "")).toBe("A,B")
   })
 })
 

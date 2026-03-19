@@ -497,7 +497,7 @@ describe("notesBuilder", () => {
       { heading: "B", content: "Second" },
     ])
     expect(result).toContain("A:\nFirst")
-    expect(result).toContain("══════════════════════════════")
+    expect(result).toContain("==============================")
     expect(result).toContain("B:\nSecond")
   })
 
@@ -564,7 +564,7 @@ describe("buildArtistNotes", () => {
     expect(result).toContain("Campaign: Not Real Art - Modern Love")
     expect(result).toContain("Organization: Not Real Art")
     expect(result).toContain("Mission: Supporting emerging artists")
-    expect(result).toContain("Contact: Scott Power — scott@notrealart.com")
+    expect(result).toContain("Contact: Scott Power - scott@notrealart.com")
     expect(result).toContain("Curator: Jane Curator (she/her)")
     expect(result).toContain("Curator Email: jane@notrealart.com")
     expect(result).toContain("Curator Bio: Jane has curated for 10 years")
@@ -616,7 +616,7 @@ describe("buildArtworkNotes", () => {
     expect(result).toContain("PARTNER ORGANIZATION:")
     expect(result).toContain("Campaign: Arterial - Grad Show")
     expect(result).toContain("Organization: Arterial")
-    expect(result).toContain("Contact: Scott — scott@arterial.org")
+    expect(result).toContain("Contact: Scott - scott@arterial.org")
   })
 
   it("skips relevance when SKIP", () => {

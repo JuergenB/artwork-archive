@@ -324,7 +324,7 @@ export function aiTags(value: string | null | undefined): string {
 
 // ─── Notes Builder ──────────────────────────────────────────
 
-const SECTION_SEPARATOR = "══════════════════════════════"
+const SECTION_SEPARATOR = "=============================="
 
 export interface NotesSection {
   heading: string
@@ -390,7 +390,7 @@ export function formatPartnerOrgs(orgs: PartnerOrgContext[] | null | undefined):
     lines.push(`Organization: ${org.organizationName}`)
     if (org.missionStatement) lines.push(`Mission: ${org.missionStatement}`)
     if (org.contactName || org.contactEmail) {
-      const contact = [org.contactName, org.contactEmail].filter(Boolean).join(" — ")
+      const contact = [org.contactName, org.contactEmail].filter(Boolean).join(" - ")
       lines.push(`Contact: ${contact}`)
     }
     if (org.curatorName) {
