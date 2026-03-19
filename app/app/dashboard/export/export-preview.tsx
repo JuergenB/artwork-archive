@@ -210,10 +210,10 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-3 gap-4">
-            <Card>
+            <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-card">
               <CardContent className="py-4 flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2">
-                  <Users className="h-5 w-5 text-primary" />
+                <div className="rounded-lg bg-blue-100 dark:bg-blue-900/50 p-2">
+                  <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{previewData.totalArtists}</p>
@@ -223,10 +223,10 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/30 dark:to-card">
               <CardContent className="py-4 flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2">
-                  <ImageIcon className="h-5 w-5 text-primary" />
+                <div className="rounded-lg bg-violet-100 dark:bg-violet-900/50 p-2">
+                  <ImageIcon className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{previewData.totalArtworks}</p>
@@ -236,10 +236,10 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-card">
               <CardContent className="py-4 h-full flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2 flex-shrink-0">
-                  <Eye className="h-5 w-5 text-primary" />
+                <div className="rounded-lg bg-amber-100 dark:bg-amber-900/50 p-2 flex-shrink-0">
+                  <Eye className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
                   <p className="text-sm font-bold leading-tight">{previewData.campaignName}</p>

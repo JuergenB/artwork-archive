@@ -110,16 +110,16 @@ export default async function HomePage() {
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
           {[
-            { title: "Artists Ready", value: approvedArtists.length, label: "Approved for export", icon: Users },
-            { title: "Artworks Ready", value: approvedArtworks.length, label: "Approved for export", icon: Image },
-            { title: "Total Exports", value: exportLogs.length, label: "All time", icon: FileDown },
-            { title: "Active Campaigns", value: activeCampaigns.length, label: "With submissions", icon: Megaphone },
+            { title: "Artists Ready", value: approvedArtists.length, label: "Approved for export", icon: Users, bg: "from-blue-50 to-white dark:from-blue-950/30 dark:to-card", iconColor: "text-blue-500" },
+            { title: "Artworks Ready", value: approvedArtworks.length, label: "Approved for export", icon: Image, bg: "from-violet-50 to-white dark:from-violet-950/30 dark:to-card", iconColor: "text-violet-500" },
+            { title: "Total Exports", value: exportLogs.length, label: "All time", icon: FileDown, bg: "from-emerald-50 to-white dark:from-emerald-950/30 dark:to-card", iconColor: "text-emerald-500" },
+            { title: "Active Campaigns", value: activeCampaigns.length, label: "With submissions", icon: Megaphone, bg: "from-amber-50 to-white dark:from-amber-950/30 dark:to-card", iconColor: "text-amber-500" },
           ].map((stat) => (
-            <Card key={stat.title}>
+            <Card key={stat.title} className={`bg-gradient-to-br ${stat.bg}`}>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-3 gap-2">
                   <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">{stat.title}</span>
-                  <stat.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <stat.icon className={`h-4 w-4 shrink-0 ${stat.iconColor}`} />
                 </div>
                 <div className="text-3xl font-bold">{stat.value}</div>
                 <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
