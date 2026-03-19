@@ -17,6 +17,8 @@ export interface PartnerOrgSummary {
   curatorEmail: string | null
   curatorPronouns: string | null
   curatorBio: string | null
+  /** The campaign this partner org is associated with */
+  campaignName: string | null
 }
 
 export interface EnrichedArtist extends Artist {
@@ -24,8 +26,8 @@ export interface EnrichedArtist extends Artist {
   groups: string
   /** Resolved exhibition history for Notes builder */
   exhibitionHistory: string
-  /** Resolved partner org details (if artist was submitted by a partner) */
-  partnerOrg: PartnerOrgSummary | null
+  /** Resolved partner org details (one per partner campaign) */
+  partnerOrgs: PartnerOrgSummary[]
 }
 
 export interface EnrichedArtwork extends Artwork {
@@ -36,7 +38,7 @@ export interface EnrichedArtwork extends Artwork {
   /** Resolved artist last name (from linked artist) */
   artistLastName: string
   /** Resolved partner org details (from campaign) */
-  partnerOrg: PartnerOrgSummary | null
+  partnerOrgs: PartnerOrgSummary[]
 }
 
 // ─── Lookup Maps ────────────────────────────────────────
@@ -69,16 +71,17 @@ function extractYearFromCampaign(campaign: Campaign): string {
   return new Date().getFullYear().toString()
 }
 
-function resolvePartnerOrg(
+function resolvePartnerOrgs(
   campaigns: Campaign[],
   partnerOrgMap: Map<string, PartnerOrg>,
-): PartnerOrgSummary | null {
+): PartnerOrgSummary[] {
+  const results: PartnerOrgSummary[] = []
   for (const campaign of campaigns) {
     const orgId = campaign.partnerOrgIds?.[0]
     if (!orgId) continue
     const org = partnerOrgMap.get(orgId)
     if (!org?.organizationName) continue
-    return {
+    results.push({
       organizationName: org.organizationName,
       missionStatement: org.missionStatement,
       contactName: org.contactName,
@@ -87,9 +90,10 @@ function resolvePartnerOrg(
       curatorEmail: org.curatorEmail,
       curatorPronouns: org.curatorPronouns,
       curatorBio: org.curatorBio,
-    }
+      campaignName: campaign.campaignName,
+    })
   }
-  return null
+  return results
 }
 
 function extractOrgName(campaignName: string): string {
@@ -144,14 +148,14 @@ export function enrichArtist(
     }
   }
 
-  // Partner org (from artist's campaigns or direct link)
-  const partnerOrg = resolvePartnerOrg(artistCampaigns, maps.partnerOrgMap)
+  // Partner orgs (one per partner campaign)
+  const partnerOrgs = resolvePartnerOrgs(artistCampaigns, maps.partnerOrgMap)
 
   return {
     ...artist,
     groups: dedupedGroups.join(", "),
     exhibitionHistory: historyLines.join("\n"),
-    partnerOrg,
+    partnerOrgs,
   }
 }
 
@@ -183,18 +187,18 @@ export function enrichArtwork(
   const artistId = artwork.artistIds?.[0]
   const artist = artistId ? maps.artistMap.get(artistId) : null
 
-  // Partner org from campaign
+  // Partner orgs from campaign
   const artworkCampaigns = artwork.campaignIds
     .map((id) => maps.campaignMap.get(id))
     .filter((c): c is Campaign => !!c)
-  const partnerOrg = resolvePartnerOrg(artworkCampaigns, maps.partnerOrgMap)
+  const partnerOrgs = resolvePartnerOrgs(artworkCampaigns, maps.partnerOrgMap)
 
   return {
     ...artwork,
     collections,
     artistFirstName: artist?.firstName ?? "",
     artistLastName: artist?.lastName ?? "",
-    partnerOrg,
+    partnerOrgs,
   }
 }
 

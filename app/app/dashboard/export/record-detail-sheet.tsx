@@ -233,7 +233,7 @@ export function ArtistDetailSheet({
                 socialProfiles: artist.socialProfilesAi,
                 summaryAi: artist.summaryAi,
                 tagsAi: artist.tagsAi,
-                partnerOrg: artist.partnerOrg ?? null,
+                partnerOrgs: artist.partnerOrgs ?? [],
               }) || "No notes content available."}
             </dd>
           </div>
@@ -392,7 +392,7 @@ export function ArtworkDetailSheet({
             const notes = buildArtworkNotes({
               relevanceHypothesisAi: artwork.relevanceHypothesisAi,
               linkToPurchaseUrl: artwork.linkToPurchaseUrl,
-              partnerOrg: artwork.partnerOrg ?? null,
+              partnerOrgs: artwork.partnerOrgs ?? [],
             })
             return notes ? (
               <>

@@ -92,7 +92,7 @@ export function buildArtistCsvRow(artist: EnrichedArtist): string[] {
     socialProfiles: artist.socialProfilesAi,
     summaryAi: artist.summaryAi,
     tagsAi: artist.tagsAi,
-    partnerOrg: artist.partnerOrg,
+    partnerOrgs: artist.partnerOrgs,
   })
   // Col 24: Bio
   row[24] = artist.bio ?? ""
@@ -167,7 +167,7 @@ export function buildArtworkCsvRow(artwork: EnrichedArtwork): string[] {
   row[27] = buildArtworkNotes({
     relevanceHypothesisAi: artwork.relevanceHypothesisAi,
     linkToPurchaseUrl: artwork.linkToPurchaseUrl,
-    partnerOrg: artwork.partnerOrg,
+    partnerOrgs: artwork.partnerOrgs,
   })
   // Col 28: Collections (already resolved in enrichment)
   row[28] = artwork.collections

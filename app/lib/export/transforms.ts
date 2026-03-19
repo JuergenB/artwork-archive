@@ -373,28 +373,35 @@ export interface PartnerOrgContext {
   curatorEmail: string | null | undefined
   curatorPronouns: string | null | undefined
   curatorBio: string | null | undefined
+  campaignName: string | null | undefined
 }
 
 /**
  * Format partner org details as a plain-text block for Notes fields.
- * Returns null if no partner org (non-partner submissions).
+ * Each partner is shown with its campaign context.
+ * Returns null if no partner orgs (non-partner submissions).
  */
-export function formatPartnerOrg(org: PartnerOrgContext | null | undefined): string | null {
-  if (!org) return null
-  const lines: string[] = []
-  lines.push(`Organization: ${org.organizationName}`)
-  if (org.missionStatement) lines.push(`Mission: ${org.missionStatement}`)
-  if (org.contactName || org.contactEmail) {
-    const contact = [org.contactName, org.contactEmail].filter(Boolean).join(" — ")
-    lines.push(`Contact: ${contact}`)
+export function formatPartnerOrgs(orgs: PartnerOrgContext[] | null | undefined): string | null {
+  if (!orgs || orgs.length === 0) return null
+  const blocks: string[] = []
+  for (const org of orgs) {
+    const lines: string[] = []
+    if (org.campaignName) lines.push(`Campaign: ${org.campaignName}`)
+    lines.push(`Organization: ${org.organizationName}`)
+    if (org.missionStatement) lines.push(`Mission: ${org.missionStatement}`)
+    if (org.contactName || org.contactEmail) {
+      const contact = [org.contactName, org.contactEmail].filter(Boolean).join(" — ")
+      lines.push(`Contact: ${contact}`)
+    }
+    if (org.curatorName) {
+      const curatorLine = [org.curatorName, org.curatorPronouns ? `(${org.curatorPronouns})` : null].filter(Boolean).join(" ")
+      lines.push(`Curator: ${curatorLine}`)
+      if (org.curatorEmail) lines.push(`Curator Email: ${org.curatorEmail}`)
+      if (org.curatorBio) lines.push(`Curator Bio: ${org.curatorBio}`)
+    }
+    blocks.push(lines.join("\n"))
   }
-  if (org.curatorName) {
-    const curatorLine = [org.curatorName, org.curatorPronouns ? `(${org.curatorPronouns})` : null].filter(Boolean).join(" ")
-    lines.push(`Curator: ${curatorLine}`)
-    if (org.curatorEmail) lines.push(`Curator Email: ${org.curatorEmail}`)
-    if (org.curatorBio) lines.push(`Curator Bio: ${org.curatorBio}`)
-  }
-  return lines.join("\n")
+  return blocks.join("\n\n")
 }
 
 export interface ArtistNotesContext {
@@ -404,18 +411,18 @@ export interface ArtistNotesContext {
   socialProfiles: string | null | undefined
   summaryAi: string | null | undefined
   tagsAi: string | null | undefined
-  partnerOrg: PartnerOrgContext | null | undefined
+  partnerOrgs: PartnerOrgContext[] | null | undefined
 }
 
 export function buildArtistNotes(ctx: ArtistNotesContext): string {
   return notesBuilder([
     { heading: "ARTIST STATEMENT", content: ctx.artistStatement },
     { heading: "SUMMARY (AI)", content: ctx.summaryAi },
-    { heading: "EXHIBITION HISTORY", content: ctx.exhibitionHistory },
     { heading: "ADDITIONAL SOCIAL PROFILES (AI)", content: ctx.socialProfiles },
     { heading: "TAGS (AI)", content: ctx.tagsAi },
     { heading: "ARTIST PROFILE (AI)", content: ctx.profileAi, stripMd: true },
-    { heading: "PARTNER ORGANIZATION", content: formatPartnerOrg(ctx.partnerOrg) },
+    { heading: "EXHIBITION HISTORY", content: ctx.exhibitionHistory },
+    { heading: "PARTNER ORGANIZATION", content: formatPartnerOrgs(ctx.partnerOrgs) },
   ])
 }
 
@@ -424,7 +431,7 @@ export function buildArtistNotes(ctx: ArtistNotesContext): string {
 export interface ArtworkNotesContext {
   relevanceHypothesisAi: string | null | undefined
   linkToPurchaseUrl: string | null | undefined
-  partnerOrg: PartnerOrgContext | null | undefined
+  partnerOrgs: PartnerOrgContext[] | null | undefined
 }
 
 export function buildArtworkNotes(ctx: ArtworkNotesContext): string {
@@ -438,7 +445,7 @@ export function buildArtworkNotes(ctx: ArtworkNotesContext): string {
   return notesBuilder([
     { heading: "EXHIBITION FIT (AI)", content: relevance },
     { heading: "PURCHASE LINK", content: ctx.linkToPurchaseUrl },
-    { heading: "PARTNER ORGANIZATION", content: formatPartnerOrg(ctx.partnerOrg) },
+    { heading: "PARTNER ORGANIZATION", content: formatPartnerOrgs(ctx.partnerOrgs) },
   ])
 }
 

@@ -12,21 +12,25 @@ export default async function FieldMappingsPage() {
   // Define sort order for transform inputs within each target column
   // Lower number = appears first within the group
   const transformInputOrder: Record<string, number> = {
-    // Artist Notes builder order (from spec)
+    // Artist Notes builder order (matches buildArtistNotes in transforms.ts)
     "(notes_builder)": 0,
     "Artist Statement": 1,
-    "Artist Profile (AI)": 2,
-    "Artist Summary (AI)": 3,
-    "AI Tags": 4,
-    "Social Profiles (AI)": 5,
-    "Instagram URL": 6,
-    "Facebook URL": 7,
-    "Twitter URL": 8,
-    "LinkedIn URL": 9,
-    "Pinterest URL": 10,
-    // Artwork Notes builder order
+    "Artist Summary (AI)": 2,
+    "Exhibition History (resolved)": 3,
+    "Social Profiles (AI)": 4,
+    "AI Tags": 5,
+    "Artist Profile (AI)": 6,
+    "Partner Organizations (lookup)": 7,
+    // Social media URL columns
+    "Instagram URL": 10,
+    "Facebook URL": 11,
+    "Twitter URL": 12,
+    "LinkedIn URL": 13,
+    "Pinterest URL": 14,
+    // Artwork Notes builder order (matches buildArtworkNotes)
     "Relevance Hypothesis (AI)": 1,
     "Link to Purchase URL": 2,
+    // "Partner Organizations (lookup)" already defined above (7) — artwork uses same
     // Artwork field_concatenate inputs
     "Medium (AI)": 1,
     "Subject Matter (AI)": 1,

@@ -529,7 +529,7 @@ describe("buildArtistNotes", () => {
       socialProfiles: "Instagram: https://instagram.com/john",
       summaryAi: "Emerging artist",
       tagsAi: "abstract, modern",
-      partnerOrg: null,
+      partnerOrgs: [],
     })
     expect(result).toContain("ARTIST STATEMENT:\nI create art")
     expect(result).toContain("ARTIST PROFILE (AI):\nJohn is an artist") // markdown stripped
@@ -548,7 +548,7 @@ describe("buildArtistNotes", () => {
       socialProfiles: null,
       summaryAi: null,
       tagsAi: null,
-      partnerOrg: {
+      partnerOrgs: [{
         organizationName: "Not Real Art",
         missionStatement: "Supporting emerging artists",
         contactName: "Scott Power",
@@ -557,9 +557,11 @@ describe("buildArtistNotes", () => {
         curatorEmail: "jane@notrealart.com",
         curatorPronouns: "she/her",
         curatorBio: "Jane has curated for 10 years",
-      },
+        campaignName: "Not Real Art - Modern Love",
+      }],
     })
     expect(result).toContain("PARTNER ORGANIZATION:")
+    expect(result).toContain("Campaign: Not Real Art - Modern Love")
     expect(result).toContain("Organization: Not Real Art")
     expect(result).toContain("Mission: Supporting emerging artists")
     expect(result).toContain("Contact: Scott Power — scott@notrealart.com")
@@ -576,7 +578,7 @@ describe("buildArtistNotes", () => {
       socialProfiles: null,
       summaryAi: null,
       tagsAi: null,
-      partnerOrg: null,
+      partnerOrgs: [],
     })
     expect(result).toBe("ARTIST STATEMENT:\nI create art")
     expect(result).not.toContain("PROFILE")
@@ -588,7 +590,7 @@ describe("buildArtworkNotes", () => {
     const result = buildArtworkNotes({
       relevanceHypothesisAi: "Strong connection to exhibition theme",
       linkToPurchaseUrl: "https://shop.example.com/piece1",
-      partnerOrg: null,
+      partnerOrgs: [],
     })
     expect(result).toContain("EXHIBITION FIT (AI):")
     expect(result).toContain("PURCHASE LINK:")
@@ -599,7 +601,7 @@ describe("buildArtworkNotes", () => {
     const result = buildArtworkNotes({
       relevanceHypothesisAi: null,
       linkToPurchaseUrl: null,
-      partnerOrg: {
+      partnerOrgs: [{
         organizationName: "Arterial",
         missionStatement: null,
         contactName: "Scott",
@@ -608,9 +610,11 @@ describe("buildArtworkNotes", () => {
         curatorEmail: null,
         curatorPronouns: null,
         curatorBio: null,
-      },
+        campaignName: "Arterial - Grad Show",
+      }],
     })
     expect(result).toContain("PARTNER ORGANIZATION:")
+    expect(result).toContain("Campaign: Arterial - Grad Show")
     expect(result).toContain("Organization: Arterial")
     expect(result).toContain("Contact: Scott — scott@arterial.org")
   })
@@ -619,7 +623,7 @@ describe("buildArtworkNotes", () => {
     const result = buildArtworkNotes({
       relevanceHypothesisAi: "SKIP",
       linkToPurchaseUrl: "https://shop.example.com",
-      partnerOrg: null,
+      partnerOrgs: [],
     })
     expect(result).not.toContain("EXHIBITION FIT")
     expect(result).toContain("PURCHASE LINK:")
@@ -629,7 +633,7 @@ describe("buildArtworkNotes", () => {
     const result = buildArtworkNotes({
       relevanceHypothesisAi: "skip",
       linkToPurchaseUrl: null,
-      partnerOrg: null,
+      partnerOrgs: [],
     })
     expect(result).toBe("")
   })
