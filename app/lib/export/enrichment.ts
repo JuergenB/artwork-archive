@@ -8,11 +8,24 @@ import { collectionsExpand } from "./transforms"
 
 // ─── Enriched Types ─────────────────────────────────────
 
+export interface PartnerOrgSummary {
+  organizationName: string
+  missionStatement: string | null
+  contactName: string | null
+  contactEmail: string | null
+  curatorName: string | null
+  curatorEmail: string | null
+  curatorPronouns: string | null
+  curatorBio: string | null
+}
+
 export interface EnrichedArtist extends Artist {
   /** Resolved campaign hierarchy for AA Groups column */
   groups: string
   /** Resolved exhibition history for Notes builder */
   exhibitionHistory: string
+  /** Resolved partner org details (if artist was submitted by a partner) */
+  partnerOrg: PartnerOrgSummary | null
 }
 
 export interface EnrichedArtwork extends Artwork {
@@ -22,6 +35,8 @@ export interface EnrichedArtwork extends Artwork {
   artistFirstName: string
   /** Resolved artist last name (from linked artist) */
   artistLastName: string
+  /** Resolved partner org details (from campaign) */
+  partnerOrg: PartnerOrgSummary | null
 }
 
 // ─── Lookup Maps ────────────────────────────────────────
@@ -52,6 +67,29 @@ function extractYearFromCampaign(campaign: Campaign): string {
     if (match) return match[0]
   }
   return new Date().getFullYear().toString()
+}
+
+function resolvePartnerOrg(
+  campaigns: Campaign[],
+  partnerOrgMap: Map<string, PartnerOrg>,
+): PartnerOrgSummary | null {
+  for (const campaign of campaigns) {
+    const orgId = campaign.partnerOrgIds?.[0]
+    if (!orgId) continue
+    const org = partnerOrgMap.get(orgId)
+    if (!org?.organizationName) continue
+    return {
+      organizationName: org.organizationName,
+      missionStatement: org.missionStatement,
+      contactName: org.contactName,
+      contactEmail: org.contactEmail,
+      curatorName: org.curatorName,
+      curatorEmail: org.curatorEmail,
+      curatorPronouns: org.curatorPronouns,
+      curatorBio: org.curatorBio,
+    }
+  }
+  return null
 }
 
 function extractOrgName(campaignName: string): string {
@@ -106,10 +144,14 @@ export function enrichArtist(
     }
   }
 
+  // Partner org (from artist's campaigns or direct link)
+  const partnerOrg = resolvePartnerOrg(artistCampaigns, maps.partnerOrgMap)
+
   return {
     ...artist,
     groups: dedupedGroups.join(", "),
     exhibitionHistory: historyLines.join("\n"),
+    partnerOrg,
   }
 }
 
@@ -141,11 +183,18 @@ export function enrichArtwork(
   const artistId = artwork.artistIds?.[0]
   const artist = artistId ? maps.artistMap.get(artistId) : null
 
+  // Partner org from campaign
+  const artworkCampaigns = artwork.campaignIds
+    .map((id) => maps.campaignMap.get(id))
+    .filter((c): c is Campaign => !!c)
+  const partnerOrg = resolvePartnerOrg(artworkCampaigns, maps.partnerOrgMap)
+
   return {
     ...artwork,
     collections,
     artistFirstName: artist?.firstName ?? "",
     artistLastName: artist?.lastName ?? "",
+    partnerOrg,
   }
 }
 

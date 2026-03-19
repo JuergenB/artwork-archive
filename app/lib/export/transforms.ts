@@ -364,6 +364,39 @@ export function notesBuilder(sections: NotesSection[]): string {
 
 // ─── Artist Notes Builder (convenience) ─────────────────────
 
+export interface PartnerOrgContext {
+  organizationName: string
+  missionStatement: string | null | undefined
+  contactName: string | null | undefined
+  contactEmail: string | null | undefined
+  curatorName: string | null | undefined
+  curatorEmail: string | null | undefined
+  curatorPronouns: string | null | undefined
+  curatorBio: string | null | undefined
+}
+
+/**
+ * Format partner org details as a plain-text block for Notes fields.
+ * Returns null if no partner org (non-partner submissions).
+ */
+export function formatPartnerOrg(org: PartnerOrgContext | null | undefined): string | null {
+  if (!org) return null
+  const lines: string[] = []
+  lines.push(`Organization: ${org.organizationName}`)
+  if (org.missionStatement) lines.push(`Mission: ${org.missionStatement}`)
+  if (org.contactName || org.contactEmail) {
+    const contact = [org.contactName, org.contactEmail].filter(Boolean).join(" — ")
+    lines.push(`Contact: ${contact}`)
+  }
+  if (org.curatorName) {
+    const curatorLine = [org.curatorName, org.curatorPronouns ? `(${org.curatorPronouns})` : null].filter(Boolean).join(" ")
+    lines.push(`Curator: ${curatorLine}`)
+    if (org.curatorEmail) lines.push(`Curator Email: ${org.curatorEmail}`)
+    if (org.curatorBio) lines.push(`Curator Bio: ${org.curatorBio}`)
+  }
+  return lines.join("\n")
+}
+
 export interface ArtistNotesContext {
   artistStatement: string | null | undefined
   profileAi: string | null | undefined
@@ -371,6 +404,7 @@ export interface ArtistNotesContext {
   socialProfiles: string | null | undefined
   summaryAi: string | null | undefined
   tagsAi: string | null | undefined
+  partnerOrg: PartnerOrgContext | null | undefined
 }
 
 export function buildArtistNotes(ctx: ArtistNotesContext): string {
@@ -381,6 +415,7 @@ export function buildArtistNotes(ctx: ArtistNotesContext): string {
     { heading: "ADDITIONAL SOCIAL PROFILES (AI)", content: ctx.socialProfiles },
     { heading: "TAGS (AI)", content: ctx.tagsAi },
     { heading: "ARTIST PROFILE (AI)", content: ctx.profileAi, stripMd: true },
+    { heading: "PARTNER ORGANIZATION", content: formatPartnerOrg(ctx.partnerOrg) },
   ])
 }
 
@@ -389,6 +424,7 @@ export function buildArtistNotes(ctx: ArtistNotesContext): string {
 export interface ArtworkNotesContext {
   relevanceHypothesisAi: string | null | undefined
   linkToPurchaseUrl: string | null | undefined
+  partnerOrg: PartnerOrgContext | null | undefined
 }
 
 export function buildArtworkNotes(ctx: ArtworkNotesContext): string {
@@ -402,6 +438,7 @@ export function buildArtworkNotes(ctx: ArtworkNotesContext): string {
   return notesBuilder([
     { heading: "EXHIBITION FIT (AI)", content: relevance },
     { heading: "PURCHASE LINK", content: ctx.linkToPurchaseUrl },
+    { heading: "PARTNER ORGANIZATION", content: formatPartnerOrg(ctx.partnerOrg) },
   ])
 }
 

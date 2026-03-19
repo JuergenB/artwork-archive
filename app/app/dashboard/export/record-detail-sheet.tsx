@@ -9,8 +9,7 @@ import {
 } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import type { Artist, Artwork } from "@/lib/types"
-import type { ExportPreviewArtist, ExportPreviewArtwork } from "@/app/api/export/preview/route"
+import type { EnrichedArtist, EnrichedArtwork } from "@/lib/export/enrichment"
 import { buildArtistNotes, buildArtworkNotes } from "@/lib/export/transforms"
 
 // ─── Field Display Helper ────────────────────────────────
@@ -91,8 +90,8 @@ export function ArtistDetailSheet({
   open,
   onOpenChange,
 }: {
-  artist: (Artist & { groups?: string; exhibitionHistory?: string }) | null
-  artworks: (Artwork & { collections?: string })[]
+  artist: EnrichedArtist | null
+  artworks: EnrichedArtwork[]
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
@@ -234,6 +233,7 @@ export function ArtistDetailSheet({
                 socialProfiles: artist.socialProfilesAi,
                 summaryAi: artist.summaryAi,
                 tagsAi: artist.tagsAi,
+                partnerOrg: artist.partnerOrg ?? null,
               }) || "No notes content available."}
             </dd>
           </div>
@@ -287,7 +287,7 @@ export function ArtworkDetailSheet({
   open,
   onOpenChange,
 }: {
-  artwork: (Artwork & { collections?: string }) | null
+  artwork: EnrichedArtwork | null
   artistName?: string | null
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -392,6 +392,7 @@ export function ArtworkDetailSheet({
             const notes = buildArtworkNotes({
               relevanceHypothesisAi: artwork.relevanceHypothesisAi,
               linkToPurchaseUrl: artwork.linkToPurchaseUrl,
+              partnerOrg: artwork.partnerOrg ?? null,
             })
             return notes ? (
               <>

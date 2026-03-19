@@ -529,6 +529,7 @@ describe("buildArtistNotes", () => {
       socialProfiles: "Instagram: https://instagram.com/john",
       summaryAi: "Emerging artist",
       tagsAi: "abstract, modern",
+      partnerOrg: null,
     })
     expect(result).toContain("ARTIST STATEMENT:\nI create art")
     expect(result).toContain("ARTIST PROFILE (AI):\nJohn is an artist") // markdown stripped
@@ -536,6 +537,35 @@ describe("buildArtistNotes", () => {
     expect(result).toContain("ADDITIONAL SOCIAL PROFILES (AI):")
     expect(result).toContain("SUMMARY (AI):")
     expect(result).toContain("TAGS (AI):")
+    expect(result).not.toContain("PARTNER ORGANIZATION")
+  })
+
+  it("includes partner org when present", () => {
+    const result = buildArtistNotes({
+      artistStatement: "I create art",
+      profileAi: null,
+      exhibitionHistory: null,
+      socialProfiles: null,
+      summaryAi: null,
+      tagsAi: null,
+      partnerOrg: {
+        organizationName: "Not Real Art",
+        missionStatement: "Supporting emerging artists",
+        contactName: "Scott Power",
+        contactEmail: "scott@notrealart.com",
+        curatorName: "Jane Curator",
+        curatorEmail: "jane@notrealart.com",
+        curatorPronouns: "she/her",
+        curatorBio: "Jane has curated for 10 years",
+      },
+    })
+    expect(result).toContain("PARTNER ORGANIZATION:")
+    expect(result).toContain("Organization: Not Real Art")
+    expect(result).toContain("Mission: Supporting emerging artists")
+    expect(result).toContain("Contact: Scott Power — scott@notrealart.com")
+    expect(result).toContain("Curator: Jane Curator (she/her)")
+    expect(result).toContain("Curator Email: jane@notrealart.com")
+    expect(result).toContain("Curator Bio: Jane has curated for 10 years")
   })
 
   it("omits empty sections", () => {
@@ -546,6 +576,7 @@ describe("buildArtistNotes", () => {
       socialProfiles: null,
       summaryAi: null,
       tagsAi: null,
+      partnerOrg: null,
     })
     expect(result).toBe("ARTIST STATEMENT:\nI create art")
     expect(result).not.toContain("PROFILE")
@@ -557,15 +588,38 @@ describe("buildArtworkNotes", () => {
     const result = buildArtworkNotes({
       relevanceHypothesisAi: "Strong connection to exhibition theme",
       linkToPurchaseUrl: "https://shop.example.com/piece1",
+      partnerOrg: null,
     })
     expect(result).toContain("EXHIBITION FIT (AI):")
     expect(result).toContain("PURCHASE LINK:")
+    expect(result).not.toContain("PARTNER ORGANIZATION")
+  })
+
+  it("includes partner org in artwork notes", () => {
+    const result = buildArtworkNotes({
+      relevanceHypothesisAi: null,
+      linkToPurchaseUrl: null,
+      partnerOrg: {
+        organizationName: "Arterial",
+        missionStatement: null,
+        contactName: "Scott",
+        contactEmail: "scott@arterial.org",
+        curatorName: null,
+        curatorEmail: null,
+        curatorPronouns: null,
+        curatorBio: null,
+      },
+    })
+    expect(result).toContain("PARTNER ORGANIZATION:")
+    expect(result).toContain("Organization: Arterial")
+    expect(result).toContain("Contact: Scott — scott@arterial.org")
   })
 
   it("skips relevance when SKIP", () => {
     const result = buildArtworkNotes({
       relevanceHypothesisAi: "SKIP",
       linkToPurchaseUrl: "https://shop.example.com",
+      partnerOrg: null,
     })
     expect(result).not.toContain("EXHIBITION FIT")
     expect(result).toContain("PURCHASE LINK:")
@@ -575,12 +629,13 @@ describe("buildArtworkNotes", () => {
     const result = buildArtworkNotes({
       relevanceHypothesisAi: "skip",
       linkToPurchaseUrl: null,
+      partnerOrg: null,
     })
     expect(result).toBe("")
   })
 
   it("returns empty when all null", () => {
-    expect(buildArtworkNotes({ relevanceHypothesisAi: null, linkToPurchaseUrl: null })).toBe("")
+    expect(buildArtworkNotes({ relevanceHypothesisAi: null, linkToPurchaseUrl: null, partnerOrg: null })).toBe("")
   })
 })
 
