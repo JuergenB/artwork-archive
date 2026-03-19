@@ -202,7 +202,7 @@ describe("buildArtworkCsvRow", () => {
   it("produces array with correct length", () => {
     const row = buildArtworkCsvRow(makeArtwork())
     expect(row).toHaveLength(AA_ARTWORK_COLUMNS.length)
-    expect(row).toHaveLength(68)
+    expect(row).toHaveLength(69)
   })
 
   it("maps piece name and artist name", () => {

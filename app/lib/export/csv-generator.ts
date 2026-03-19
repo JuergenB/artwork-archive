@@ -175,6 +175,8 @@ export function buildArtworkCsvRow(artwork: EnrichedArtwork): string[] {
   // Col 66: Piece Image URLs (pipe-separated)
   row[66] = pipeSeparate(artwork.pieceImageUrls)
   // Col 67: Additional File URLs (not mapped — empty)
+  // Col 68: Artist Email (added — not in AA template, needed to match artworks to artists)
+  row[68] = artwork.artistEmail ?? ""
 
   return row
 }

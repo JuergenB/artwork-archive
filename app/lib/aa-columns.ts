@@ -123,6 +123,7 @@ export const AA_ARTWORK_COLUMNS: AAColumn[] = [
   { index: 65, name: "Provenance Info", entityType: "artwork" },
   { index: 66, name: "Piece Image URLs", entityType: "artwork" },
   { index: 67, name: "Additional File URLs", entityType: "artwork" },
+  { index: 68, name: "Artist Email", entityType: "artwork" },
 ]
 
 export const ALL_AA_COLUMNS = [...AA_ARTIST_COLUMNS, ...AA_ARTWORK_COLUMNS]
