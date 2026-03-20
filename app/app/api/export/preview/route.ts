@@ -68,7 +68,9 @@ export async function GET(request: NextRequest) {
       totalArtworks: enrichedArtworks.length,
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json(data, {
+      headers: { "Cache-Control": "no-store" },
+    })
   } catch (error) {
     console.error("Export preview error:", error)
     return NextResponse.json(

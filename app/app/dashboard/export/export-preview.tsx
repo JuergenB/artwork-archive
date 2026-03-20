@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Image from "next/image"
 import {
   Select,
   SelectContent,
@@ -25,6 +24,7 @@ import { ChevronDown, ChevronRight, Download, Eye, Users, ImageIcon, Check, Exte
 import type { Campaign, Artist, Artwork } from "@/lib/types"
 import type { ExportPreviewData, ExportPreviewArtist, ExportPreviewArtwork } from "@/app/api/export/preview/route"
 import { ArtistDetailSheet, ArtworkDetailSheet } from "./record-detail-sheet"
+import { ImageWithFallback } from "@/components/image-with-fallback"
 
 interface ExportPreviewProps {
   campaigns: Campaign[]
@@ -464,8 +464,8 @@ function ArtistRow({
     .filter(Boolean)
     .join(", ")
 
-  // Get first image URL from contact image
-  const thumbUrl = artist.contactImageUrl ?? null
+  // Prefer Airtable thumbnail (fresh signed URL) over Paperform URL (may expire)
+  const thumbUrl = artist.contactThumbnailUrl ?? artist.contactImageUrl ?? null
 
   return (
     <>
@@ -483,12 +483,14 @@ function ArtistRow({
         <TableCell className="px-2 py-1" style={{ width: 64 }}>
           {thumbUrl ? (
             <div className="relative h-12 w-12 flex-shrink-0">
-              <Image
+              <ImageWithFallback
                 src={thumbUrl}
                 alt={artist.fullName ?? "Artist"}
                 fill
                 className="rounded-full object-cover"
                 unoptimized
+                fallbackType="initials"
+                initials={(artist.firstName ?? "?")[0]}
               />
             </div>
           ) : (
@@ -532,8 +534,10 @@ function ArtistRow({
 // ─── Artwork Row ─────────────────────────────────────────
 
 function ArtworkRow({ artwork, onClick }: { artwork: ExportPreviewArtwork; onClick: () => void }) {
-  // Get first image URL from pipe-separated list
-  const firstImageUrl = artwork.pieceImageUrls?.split("|")[0]?.trim() ?? null
+  // Prefer Airtable thumbnail (fresh signed URL) over Paperform URL (may expire)
+  const firstImageUrl = artwork.pieceThumbnailUrl
+    ?? artwork.pieceImageUrls?.split("|")[0]?.trim()
+    ?? null
 
   const dimensions = [artwork.heightAi, artwork.widthAi, artwork.depthAi]
     .filter((d) => d != null && d > 0)
@@ -547,12 +551,13 @@ function ArtworkRow({ artwork, onClick }: { artwork: ExportPreviewArtwork; onCli
         <div className="flex items-center gap-3 pl-8">
           {firstImageUrl ? (
             <div className="relative h-8 w-8 flex-shrink-0">
-              <Image
+              <ImageWithFallback
                 src={firstImageUrl}
                 alt={artwork.pieceName ?? "Artwork"}
                 fill
                 className="rounded object-cover"
                 unoptimized
+                fallbackType="icon"
               />
             </div>
           ) : (

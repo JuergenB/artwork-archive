@@ -1,0 +1,6 @@
+# Regenerable build artifacts — no need to sync via Dropbox
+node_modules
+.next
+.turbo
+.vercel
+*.tsbuildinfo

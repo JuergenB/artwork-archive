@@ -58,6 +58,8 @@ export interface Artist {
   linkedinUrl: string | null
   pinterestUrl: string | null
   contactImageUrl: string | null
+  contactThumbnailUrl: string | null
+  submissionIdPaperform: string | null
   status: ArtistStatus
   profileAi: string | null
   summaryAi: string | null
@@ -76,6 +78,7 @@ export interface Artwork {
   subjectMatter: string | null
   description: string | null
   pieceImageUrls: string | null
+  pieceThumbnailUrl: string | null
   yearCreatedDate: string | null
   status: ArtworkStatus
   statusFromArtist: string | null
@@ -92,6 +95,7 @@ export interface Artwork {
   campaignDescriptions: string | null
   linkToPurchaseUrl: string | null
   artistEmail: string | null
+  submissionIdPaperform: string | null
 }
 
 export interface Campaign {

@@ -91,6 +91,18 @@ function asStringArray(value: unknown): string[] {
   return []
 }
 
+/** Extract the "large" thumbnail URL from an Airtable attachment field. */
+function asThumbnailUrl(value: unknown): string | null {
+  if (!Array.isArray(value) || value.length === 0) return null
+  const attachment = value[0] as Record<string, unknown>
+  const thumbnails = attachment?.thumbnails as Record<string, unknown> | undefined
+  const large = thumbnails?.large as Record<string, unknown> | undefined
+  if (typeof large?.url === "string") return large.url
+  // Fall back to the full-size attachment URL
+  if (typeof attachment?.url === "string") return attachment.url as string
+  return null
+}
+
 // ─── Transform Functions ─────────────────────────────────
 
 export function toArtist(fields: Record<string, unknown>, id: string): Artist {
@@ -117,6 +129,8 @@ export function toArtist(fields: Record<string, unknown>, id: string): Artist {
     linkedinUrl: asString(fields["LinkedIn URL"]),
     pinterestUrl: asString(fields["Pinterest URL"]),
     contactImageUrl: asString(fields["Contact Image URL"]),
+    contactThumbnailUrl: asThumbnailUrl(fields["Contact Thumbnail"]),
+    submissionIdPaperform: asString(fields["Submission ID (Paperform)"]),
     status: (asString(fields["Status"]) as ArtistStatus) || "Pending - Imported",
     profileAi: asString(fields["Artist Profile (AI)"]),
     summaryAi: asString(fields["Artist Summary (AI)"]),
@@ -137,6 +151,7 @@ export function toArtwork(fields: Record<string, unknown>, id: string): Artwork 
     subjectMatter: asString(fields["Subject Matter"]),
     description: asString(fields["Description"]),
     pieceImageUrls: asString(fields["Piece Image URLs"]),
+    pieceThumbnailUrl: asThumbnailUrl(fields["Piece Thumbnail"]),
     yearCreatedDate: asString(fields["Year Created Date"]),
     status: (asString(fields["Status"]) as ArtworkStatus) || "Pending - Imported",
     statusFromArtist: asString(fields["Status (from Artist)"]),
@@ -153,6 +168,7 @@ export function toArtwork(fields: Record<string, unknown>, id: string): Artwork 
     campaignDescriptions: asString(fields["Campaign Descriptions (from Campaign (Linked by Name))"]),
     linkToPurchaseUrl: asString(fields["Link to Purchase URL"]),
     artistEmail: asString(fields["Artist Email"]),
+    submissionIdPaperform: asString(fields["Submission ID (Paperform)"]),
   }
 }
 

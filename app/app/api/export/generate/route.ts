@@ -16,6 +16,7 @@ import {
   generateArtworkCsv,
   generateExportFileNames,
 } from "@/lib/export/csv-generator"
+import { batchRefreshImageUrls } from "@/lib/paperform/client"
 
 export async function POST(request: NextRequest) {
   let exportLogId: string | null = null
@@ -84,11 +85,41 @@ export async function POST(request: NextRequest) {
     const enrichedArtists = enrichArtists(transformedArtists, maps)
     const enrichedArtworks = enrichArtworks(transformedArtworks, maps)
 
-    // 5. Generate CSVs
+    // 5. Refresh image URLs via Paperform API (fresh signed URLs for CSV)
+    const allRecords = [
+      ...enrichedArtists.map((a) => ({
+        submissionId: a.submissionIdPaperform,
+        imageUrls: [a.contactImageUrl].filter((u): u is string => u != null),
+      })),
+      ...enrichedArtworks.map((aw) => ({
+        submissionId: aw.submissionIdPaperform,
+        imageUrls: aw.pieceImageUrls?.split("|").map((u) => u.trim()).filter(Boolean) ?? [],
+      })),
+    ]
+
+    const freshUrlMap = await batchRefreshImageUrls(allRecords)
+
+    // Replace expired URLs with fresh ones in enriched records
+    for (const artist of enrichedArtists) {
+      if (artist.contactImageUrl && freshUrlMap.has(artist.contactImageUrl)) {
+        artist.contactImageUrl = freshUrlMap.get(artist.contactImageUrl)!
+      }
+    }
+    for (const artwork of enrichedArtworks) {
+      if (artwork.pieceImageUrls) {
+        artwork.pieceImageUrls = artwork.pieceImageUrls
+          .split("|")
+          .map((u) => u.trim())
+          .map((u) => freshUrlMap.get(u) ?? u)
+          .join("|")
+      }
+    }
+
+    // 6. Generate CSVs
     const artistCsv = generateArtistCsv(enrichedArtists)
     const artworkCsv = generateArtworkCsv(enrichedArtworks)
 
-    // 6. Upload to Vercel Blob
+    // 7. Upload to Vercel Blob
     const { artistFileName, artworkFileName } = generateExportFileNames(campaignName)
 
     const [artistBlob, artworkBlob] = await Promise.all([
@@ -104,7 +135,7 @@ export async function POST(request: NextRequest) {
       }),
     ])
 
-    // 7. Prepare email draft
+    // 8. Prepare email draft
     const emailSubject = `Artwork Archive Import — ${campaignName} — ${new Date().toLocaleDateString("en-US")}`
     const emailBody = [
       `Hi Justin,`,
@@ -114,13 +145,15 @@ export async function POST(request: NextRequest) {
       `Artists (${artists.length}): ${artistBlob.url}`,
       `Artworks (${artworks.length}): ${artworkBlob.url}`,
       ``,
+      `Note: Image links in the CSV files expire in 7 days. Please complete the import by ${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}. If needed, we can re-export with fresh links.`,
+      ``,
       `Please let me know once the import is complete.`,
       ``,
       `Thanks,`,
       `Kirsten`,
     ].join("\n")
 
-    // 8. Update Export Log with URLs and status
+    // 9. Update Export Log with URLs and status
     await updateExportLog(exportLogId, {
       "Export Status": "Exported",
       "Artist CSV URL": artistBlob.url,
@@ -130,7 +163,7 @@ export async function POST(request: NextRequest) {
       "Email Body": emailBody,
     })
 
-    // 9. Update artist/artwork statuses to "Exported" (skip in test mode)
+    // 10. Update artist/artwork statuses to "Exported" (skip in test mode)
     if (!testMode) {
       const artistIds = artists.map((a) => a.id)
       const artworkIds = artworks.map((aw) => aw.id)

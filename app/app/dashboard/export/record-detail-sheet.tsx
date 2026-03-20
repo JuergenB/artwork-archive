@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { ImageWithFallback } from "@/components/image-with-fallback"
 import {
   Sheet,
   SheetContent,
@@ -114,14 +114,16 @@ export function ArtistDetailSheet({
       <SheetContent className="w-[480px] sm:max-w-[480px] overflow-y-auto p-6">
         <SheetHeader className="pb-6">
           <div className="flex items-center gap-4">
-            {artist.contactImageUrl && (
+            {(artist.contactThumbnailUrl || artist.contactImageUrl) && (
               <div className="relative h-16 w-16 flex-shrink-0">
-                <Image
-                  src={artist.contactImageUrl}
+                <ImageWithFallback
+                  src={artist.contactThumbnailUrl ?? artist.contactImageUrl!}
                   alt={artist.fullName ?? "Artist"}
                   fill
                   className="rounded-full object-cover"
                   unoptimized
+                  fallbackType="initials"
+                  initials={(artist.firstName ?? "?")[0]}
                 />
               </div>
             )}
@@ -245,17 +247,18 @@ export function ArtistDetailSheet({
               </SectionHeading>
               <div className="space-y-3 pt-2">
                 {artworks.map((aw) => {
-                  const imgUrl = aw.pieceImageUrls?.split("|")[0]?.trim()
+                  const imgUrl = aw.pieceThumbnailUrl ?? aw.pieceImageUrls?.split("|")[0]?.trim()
                   return (
                     <div key={aw.id} className="flex gap-3 items-start">
                       {imgUrl ? (
                         <div className="relative h-12 w-12 flex-shrink-0">
-                          <Image
+                          <ImageWithFallback
                             src={imgUrl}
                             alt={aw.pieceName ?? "Artwork"}
                             fill
                             className="rounded object-cover"
                             unoptimized
+                            fallbackType="icon"
                           />
                         </div>
                       ) : (
@@ -294,7 +297,7 @@ export function ArtworkDetailSheet({
 }) {
   if (!artwork) return null
 
-  const firstImageUrl = artwork.pieceImageUrls?.split("|")[0]?.trim()
+  const firstImageUrl = artwork.pieceThumbnailUrl ?? artwork.pieceImageUrls?.split("|")[0]?.trim()
   const dimensions = [artwork.heightAi, artwork.widthAi, artwork.depthAi]
     .filter((d) => d != null && d > 0)
     .join(" × ")
@@ -316,12 +319,13 @@ export function ArtworkDetailSheet({
 
         {firstImageUrl && (
           <div className="relative w-full aspect-square max-h-64 mb-6">
-            <Image
+            <ImageWithFallback
               src={firstImageUrl}
               alt={artwork.pieceName ?? "Artwork"}
               fill
               className="rounded-lg object-contain bg-muted"
               unoptimized
+              fallbackType="icon"
             />
           </div>
         )}
