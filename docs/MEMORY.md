@@ -85,8 +85,7 @@
 - **Keep README.md current.** When creating or updating epics/sub-issues, do a relevance check on `README.md` and update it if the changes affect project scope, phases, architecture, workflows, or AI models. The repo README is the public-facing overview and must always reflect the current state of the project.
 
 ## Feedback
-- [Use Perplexity for research](memory/feedback_use_perplexity_for_research.md) — Never guess at doc URLs with WebFetch; use Perplexity search/reason tools
-- [Ask before falling back on missing tools](memory/feedback_missing_tools_ask_first.md) — When expected tools (Perplexity, etc.) aren't available, STOP and ask user before substituting
+- [Perplexity for research — routing rules](memory/feedback_use_perplexity_for_research.md) — Use Perplexity in main context only; sub-agents CANNOT access MCP tools (use WebSearch instead); never guess URLs
 - [Never trigger sends to real recipients](memory/feedback_never_trigger_workflow_sends.md) — Never run workflows or send test emails to anyone other than user's own address without explicit confirmation
 - [Issue closure checklist](memory/feedback_issue_closure_checklist.md) — Always re-read GitHub issues before closing to verify all tasks complete
 - [Version numbering](memory/feedback_version_numbering.md) — n8n workflow display names must match docs; use 3-level semver (V0.8.1)

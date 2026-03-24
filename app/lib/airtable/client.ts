@@ -1,5 +1,6 @@
 import Airtable from "airtable"
 import type {
+  AAContact,
   Artist,
   ArtistStatus,
   Artwork,
@@ -250,6 +251,19 @@ export function toExportLog(fields: Record<string, unknown>, id: string): Export
   }
 }
 
+export function toAAContact(fields: Record<string, unknown>, id: string): AAContact {
+  return {
+    id,
+    email: asString(fields["Email"]),
+    fullName: asString(fields["Full Name"]),
+    firstName: asString(fields["First Name"]),
+    lastName: asString(fields["Last Name"]),
+    aaContactId: asNumber(fields["AA Contact ID"]),
+    groups: asString(fields["Groups"]),
+    artistPieceCount: asNumber(fields["Artist Piece Count"]),
+  }
+}
+
 // ─── Domain Functions ────────────────────────────────────
 
 // Artists
@@ -353,4 +367,9 @@ export async function updateRecordStatuses(
     }))
     await table.update(updates)
   }
+}
+
+// AA Contacts (reference table for duplicate detection)
+export async function getAAContacts(): Promise<AAContact[]> {
+  return fetchAll("AIRTABLE_AA_CONTACTS_TABLE_ID", toAAContact)
 }

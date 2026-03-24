@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AlertTriangle, ChevronDown, ChevronRight, Download, Eye, Users, ImageIcon, Check, ExternalLink, Loader2 } from "lucide-react"
+import { AlertTriangle, ChevronDown, ChevronRight, Download, Eye, Info, Users, ImageIcon, Check, ExternalLink, Loader2 } from "lucide-react"
 import type { Campaign, Artist, Artwork } from "@/lib/types"
 import type { ExportPreviewData, ExportPreviewArtist, ExportPreviewArtwork } from "@/app/api/export/preview/route"
 import { ArtistDetailSheet, ArtworkDetailSheet } from "./record-detail-sheet"
@@ -259,6 +259,33 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
                   <p className="text-sm text-amber-800 dark:text-amber-200">
                     {previewData.enrichmentWarning}
                   </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* AA Duplicate Warning */}
+          {previewData.aaMatches && previewData.aaMatches.length > 0 && (
+            <Card className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30">
+              <CardContent className="py-4">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-800 dark:text-blue-200">
+                    <p className="font-medium mb-1">
+                      {previewData.aaMatches.length} artist(s) already exist in Artwork Archive
+                    </p>
+                    <p className="text-blue-700 dark:text-blue-300 mb-2">
+                      Exporting will overwrite their existing AA record (bio, address, notes).
+                    </p>
+                    <ul className="space-y-1">
+                      {previewData.aaMatches.map((m) => (
+                        <li key={m.email}>
+                          <span className="font-medium">{m.artistName}</span>
+                          <span className="text-blue-600 dark:text-blue-400"> — {m.aaGroups}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </CardContent>
             </Card>

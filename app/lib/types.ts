@@ -190,6 +190,17 @@ export interface ExportLog {
   emailStatus: string | null
 }
 
+export interface AAContact {
+  id: string
+  email: string | null
+  fullName: string | null
+  firstName: string | null
+  lastName: string | null
+  aaContactId: number | null
+  groups: string | null
+  artistPieceCount: number | null
+}
+
 export interface User {
   id: string
   email: string

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import {
+  getAAContacts,
   getArtistsByIds,
   getArtworks,
   getCampaigns,
@@ -98,6 +99,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // AA duplicate detection: check if any export artists already exist in Artwork Archive
+    const aaContacts = await getAAContacts().catch(() => [])
+    const aaEmailMap = new Map<string, { fullName: string | null; groups: string | null }>()
+    for (const c of aaContacts) {
+      if (c.email) aaEmailMap.set(c.email.toLowerCase(), { fullName: c.fullName, groups: c.groups })
+    }
+    const aaMatchNames: string[] = []
+    for (const a of artists) {
+      if (a.email) {
+        const match = aaEmailMap.get(a.email.toLowerCase())
+        if (match) {
+          const groups = match.groups ? ` (${match.groups.split(" : ").slice(0, 3).join(", ")})` : ""
+          aaMatchNames.push(`${a.fullName || a.email}${groups}`)
+        }
+      }
+    }
+    const aaMatchWarning = aaMatchNames.length > 0
+      ? `${aaMatchNames.length} artist(s) already exist in Artwork Archive and will be overwritten: ${aaMatchNames.join("; ")}`
+      : null
+
     const maps = buildLookupMaps(allCampaigns, allPartnerOrgs, artists)
 
     // 3. Create Export Log with "In Progress" status
@@ -117,6 +138,7 @@ export async function POST(request: NextRequest) {
       "Export Notes": [
         testMode ? "Test export — Airtable records not updated" : "",
         enrichmentWarning ?? "",
+        aaMatchWarning ?? "",
       ].filter(Boolean).join("\n") || "",
     })
     exportLogId = exportLog.id
@@ -226,6 +248,7 @@ export async function POST(request: NextRequest) {
       emailSubject,
       emailBody,
       enrichmentWarning,
+      aaMatchWarning,
     })
   } catch (error) {
     console.error("Export generation error:", error)

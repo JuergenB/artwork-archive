@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getArtistsByIds, getArtworks, getCampaigns, getPartnerOrgs } from "@/lib/airtable/client"
+import { getAAContacts, getArtistsByIds, getArtworks, getCampaigns, getPartnerOrgs } from "@/lib/airtable/client"
 import { transformArtistForPreview, transformArtworkForPreview } from "@/lib/export/preview-transforms"
 import {
   buildLookupMaps,
@@ -13,6 +13,12 @@ export interface ExportPreviewArtist extends EnrichedArtist {}
 
 export interface ExportPreviewArtwork extends EnrichedArtwork {}
 
+export interface AAMatchInfo {
+  artistName: string
+  email: string
+  aaGroups: string
+}
+
 export interface ExportPreviewData {
   artists: ExportPreviewArtist[]
   artworks: ExportPreviewArtwork[]
@@ -20,6 +26,7 @@ export interface ExportPreviewData {
   totalArtists: number
   totalArtworks: number
   enrichmentWarning: string | null
+  aaMatches: AAMatchInfo[]
 }
 
 export async function GET(request: NextRequest) {
@@ -73,6 +80,26 @@ export async function GET(request: NextRequest) {
     }
     const enrichmentWarning = warnings.length > 0 ? warnings.join("\n") : null
 
+    // AA duplicate detection: check if any export artists already exist in Artwork Archive
+    const aaContacts = await getAAContacts().catch(() => [])
+    const aaEmailMap = new Map<string, { fullName: string | null; groups: string | null }>()
+    for (const c of aaContacts) {
+      if (c.email) aaEmailMap.set(c.email.toLowerCase(), { fullName: c.fullName, groups: c.groups })
+    }
+    const aaMatches: AAMatchInfo[] = []
+    for (const a of artists) {
+      if (a.email) {
+        const match = aaEmailMap.get(a.email.toLowerCase())
+        if (match) {
+          aaMatches.push({
+            artistName: a.fullName || a.email,
+            email: a.email,
+            aaGroups: match.groups || "No group info",
+          })
+        }
+      }
+    }
+
     const maps = buildLookupMaps(allCampaigns, allPartnerOrgs, artists)
 
     // Apply display transforms
@@ -90,6 +117,7 @@ export async function GET(request: NextRequest) {
       totalArtists: enrichedArtists.length,
       totalArtworks: enrichedArtworks.length,
       enrichmentWarning,
+      aaMatches,
     }
 
     return NextResponse.json(data, {
