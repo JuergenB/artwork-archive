@@ -157,7 +157,7 @@ export default async function HomePage() {
                 <div>
                   <p className="text-sm font-semibold">Send to Artwork Archive</p>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    After export, click &ldquo;Compose Email&rdquo; to open a pre-filled email with the CSV download links. Send it to Justin and the AA team for import.
+                    After export, click &ldquo;Compose Email&rdquo; to open a pre-filled email with the CSV download links. Send it to the Artwork Archive team for import.
                   </p>
                 </div>
               </div>
@@ -167,7 +167,7 @@ export default async function HomePage() {
                 <div>
                   <p className="text-sm font-semibold">Track &amp; Confirm</p>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    Monitor each export in Export Logs. Once Justin confirms the import went through, mark it as &ldquo;Accepted.&rdquo; If there&rsquo;s an issue, mark it &ldquo;Rejected&rdquo; with notes and re-export.
+                    Monitor each export in Export Logs. Once the AA team confirms the import went through, mark it as &ldquo;Accepted.&rdquo; If there&rsquo;s an issue, mark it &ldquo;Rejected&rdquo; with notes and re-export.
                   </p>
                 </div>
               </div>
@@ -198,7 +198,7 @@ export default async function HomePage() {
                 <div>
                   <Link href="/dashboard/export-logs" className="text-sm font-semibold hover:underline underline-offset-2">Export Logs</Link>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    History of every export with download links, status tracking, and one-click email compose. Accept or reject exports as Justin processes them.
+                    History of every export with download links, status tracking, and one-click email compose. Accept or reject exports as the AA team processes them.
                   </p>
                 </div>
               </div>

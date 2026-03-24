@@ -432,7 +432,7 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
                       >
                         <Button variant="default" className="gap-2">
                           <ExternalLink className="h-4 w-4" />
-                          Compose Email to Justin
+                          Compose Email to AA Team
                         </Button>
                       </a>
                     </div>

@@ -180,12 +180,15 @@ export async function POST(request: NextRequest) {
     // 8. Prepare email draft
     const emailSubject = `Artwork Archive Import — ${campaignName} — ${new Date().toLocaleDateString("en-US")}`
     const emailBody = [
-      `Hi Justin,`,
+      `Hi,`,
       ``,
       `Here are the CSV files for the ${campaignName} export:`,
       ``,
-      `Artists (${artists.length}): ${artistBlob.url}`,
-      `Artworks (${artworks.length}): ${artworkBlob.url}`,
+      `Artists (${artists.length}):`,
+      artistBlob.url,
+      ``,
+      `Artworks (${artworks.length}):`,
+      artworkBlob.url,
       ``,
       `Note: Image links in the CSV files expire in 7 days. Please complete the import by ${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}. If needed, we can re-export with fresh links.`,
       ``,
