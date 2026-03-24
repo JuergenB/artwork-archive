@@ -149,6 +149,14 @@ export async function POST(request: NextRequest) {
     const enrichedArtists = enrichArtists(transformedArtists, maps)
     const enrichedArtworks = enrichArtworks(transformedArtworks, maps)
 
+    // Populate AA groups on matched artists (for Notes builder)
+    for (const a of enrichedArtists) {
+      if (a.email) {
+        const match = aaEmailMap.get(a.email.toLowerCase())
+        if (match) a.aaGroups = match.groups
+      }
+    }
+
     // 5. Refresh image URLs via Paperform API (fresh signed URLs for CSV)
     const allRecords = [
       ...enrichedArtists.map((a) => ({

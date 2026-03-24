@@ -236,6 +236,7 @@ export function ArtistDetailSheet({
                 summaryAi: artist.summaryAi,
                 tagsAi: artist.tagsAi,
                 partnerOrgs: artist.partnerOrgs ?? [],
+                aaGroups: artist.aaGroups ?? null,
               }) || "No notes content available."}
             </dd>
           </div>

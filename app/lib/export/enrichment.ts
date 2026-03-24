@@ -28,6 +28,8 @@ export interface EnrichedArtist extends Artist {
   exhibitionHistory: string
   /** Resolved partner org details (one per partner campaign) */
   partnerOrgs: PartnerOrgSummary[]
+  /** Prior Artwork Archive exhibition groups (from AA Contacts reference table) */
+  aaGroups: string | null
 }
 
 export interface EnrichedArtwork extends Artwork {
@@ -156,6 +158,7 @@ export function enrichArtist(
     groups: dedupedGroups.join(", "),
     exhibitionHistory: historyLines.join("\n"),
     partnerOrgs,
+    aaGroups: null,
   }
 }
 

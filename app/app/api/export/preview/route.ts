@@ -110,6 +110,14 @@ export async function GET(request: NextRequest) {
     const enrichedArtists = enrichArtists(transformedArtists, maps)
     const enrichedArtworks = enrichArtworks(transformedArtworks, maps)
 
+    // Populate AA groups on matched artists (for Notes builder)
+    for (const a of enrichedArtists) {
+      if (a.email) {
+        const match = aaEmailMap.get(a.email.toLowerCase())
+        if (match) a.aaGroups = match.groups
+      }
+    }
+
     const data: ExportPreviewData = {
       artists: enrichedArtists,
       artworks: enrichedArtworks,

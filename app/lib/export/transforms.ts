@@ -412,9 +412,15 @@ export interface ArtistNotesContext {
   summaryAi: string | null | undefined
   tagsAi: string | null | undefined
   partnerOrgs: PartnerOrgContext[] | null | undefined
+  aaGroups?: string | null | undefined
 }
 
 export function buildArtistNotes(ctx: ArtistNotesContext): string {
+  // Format AA groups as readable list (colon-separated in source)
+  const aaHistory = ctx.aaGroups
+    ? ctx.aaGroups.split(" : ").map((g) => g.trim()).filter(Boolean).join(", ")
+    : null
+
   return notesBuilder([
     { heading: "ARTIST STATEMENT", content: ctx.artistStatement },
     { heading: "SUMMARY (AI)", content: ctx.summaryAi },
@@ -422,6 +428,7 @@ export function buildArtistNotes(ctx: ArtistNotesContext): string {
     { heading: "TAGS (AI)", content: ctx.tagsAi },
     { heading: "ARTIST PROFILE (AI)", content: ctx.profileAi, stripMd: true },
     { heading: "EXHIBITION HISTORY", content: ctx.exhibitionHistory },
+    { heading: "PRIOR ARTWORK ARCHIVE HISTORY", content: aaHistory },
     { heading: "PARTNER ORGANIZATION", content: formatPartnerOrgs(ctx.partnerOrgs) },
   ])
 }

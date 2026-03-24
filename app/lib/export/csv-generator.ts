@@ -93,6 +93,7 @@ export function buildArtistCsvRow(artist: EnrichedArtist): string[] {
     summaryAi: artist.summaryAi,
     tagsAi: artist.tagsAi,
     partnerOrgs: artist.partnerOrgs,
+    aaGroups: artist.aaGroups,
   })
   // Col 24: Bio
   row[24] = artist.bio ?? ""
