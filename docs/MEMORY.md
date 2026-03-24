@@ -23,25 +23,28 @@
 - **Medium/Subject Matter**: Concatenate artist-submitted + AI analysis (append "\n\nAI ANALYSIS: {AI value}" if different). `field_concatenate` transform.
 - **Tags**: AA artwork template HAS a Tags column — use it directly (`ai_tags` transform). High value for curation. AA artist template has NO tags column — artist tags go in Notes.
 - **Collections expansion**: 3 levels — campaign name + org+year + org all-time. Year from `Exhibition Open` date on Campaign, fallback to Date Imported.
-- **Image URLs**: ALWAYS use Paperform S3/CDN URLs (`Piece Image URLs`, `Contact Image URL`). NEVER Airtable attachment thumbnails (expire in hours).
+- **Image URLs (UI preview)**: Use Airtable attachment thumbnails (`Contact Thumbnail`, `Piece Thumbnail`) — fresh signed URLs on every API call. Paperform URLs expire after 7 days (secure file access policy, 2025). See [Paperform URL expiry](memory/project_paperform_url_expiry.md) and issue #23.
+- **Image URLs (CSV export)**: Currently uses Paperform text URL fields. Migration to Dropbox storage planned (issue #23).
 - **Partner org data**: Code-level joins at export time (Artwork → Campaign → Partner Org). No Airtable Lookups.
 - **Dimensions**: Plain mapping from Height/Width/Depth (AI). Zero → empty string. Convert cm → inches if Dimensions Unit (AI) is "cm".
 - **Auth**: Users stored in Airtable (email, hashed password, role: admin/curator/viewer). Auth.js Credentials provider.
 - **Multi-source profiles**: Deferred to Phase D (#87). Build for our Airtable first, refactor for multiple sources later.
 
-## Phase C Export — Workflow (implemented 2026-03-18)
+## Phase C Export — Workflow (implemented 2026-03-18, updated 2026-03-24 #91)
 - Curator (Kirsten) reviews enriched records in Airtable Interface
-- Curator approves records for export → status "Approved for Export"
+- Curator approves **artworks** for export → artwork status "Approved for Export"
 - Export triggered via web UI (`/dashboard/export` → "Export CSVs" button)
-- Pipeline: fetch approved records → apply all transforms → generate CSVs → upload to Vercel Blob → create Export Log → update statuses to "Exported"
+- **Artwork-driven pipeline (issue #91):** fetch approved artworks → resolve artists by ID from linked artworks → guard checks (enriched? not Needs Review / On Hold?) → apply transforms → generate CSVs → upload to Vercel Blob → create Export Log → update **artwork** statuses to "Exported"
+- **Artist status is NEVER changed by the export pipeline.** Artist status tracks enrichment only: `Pending - Imported` → `Pending - Enriched` → `Needs Review` / `On Hold`. Legacy export values removed from Airtable single-select field (2026-03-24).
+- **Export guards:** Artists with `Needs Review` or `On Hold` status are excluded (with warning). Artists missing `Artist Profile (AI)` are excluded (with warning). Their artworks are also excluded.
 - **CSV storage**: Vercel Blob (`@vercel/blob`, public URLs, `BLOB_READ_WRITE_TOKEN` env var)
 - **File naming**: `AA-Artists-{CampaignSlug}-{YYYY-MM-DD}.csv`, `AA-Artworks-{CampaignSlug}-{YYYY-MM-DD}.csv`
 - **Email**: v1 uses `mailto:` link (pre-filled subject/body with CSV URLs). No auto-send.
-- **Status flow**: Approved for Export → Exported → Delivered → Accepted/Rejected
+- **Artwork status flow**: Approved for Export → Exported → Delivered → Accepted/Rejected
 - **Export Log status**: In Progress → Exported → Delivered → Accepted/Rejected/Failed
 - Export Logs page at `/dashboard/export-logs` with download links, Compose Email, Accept/Reject actions
 - Kirsten clicks "Compose Email" → mailto opens with pre-filled template → sends via her email client
-- Justin processes import → Kirsten clicks "Accept" → all records updated to "Accepted"
+- Justin processes import → Kirsten clicks "Accept" → **artwork** records updated to "Accepted"
 
 ## Key Decisions (n8n/enrichment — pre Phase C)
 - **Perplexity model**: `sonar-deep-research` is required. `sonar-pro` hallucinated citations badly (Yayoi Kusama links for unrelated artists). Fixed in V0.6. See [enrichment-history.md](enrichment-history.md).
@@ -82,9 +85,16 @@
 - **Keep README.md current.** When creating or updating epics/sub-issues, do a relevance check on `README.md` and update it if the changes affect project scope, phases, architecture, workflows, or AI models. The repo README is the public-facing overview and must always reflect the current state of the project.
 
 ## Feedback
+- [Use Perplexity for research](memory/feedback_use_perplexity_for_research.md) — Never guess at doc URLs with WebFetch; use Perplexity search/reason tools
+- [Ask before falling back on missing tools](memory/feedback_missing_tools_ask_first.md) — When expected tools (Perplexity, etc.) aren't available, STOP and ask user before substituting
+- [Never trigger sends to real recipients](memory/feedback_never_trigger_workflow_sends.md) — Never run workflows or send test emails to anyone other than user's own address without explicit confirmation
 - [Issue closure checklist](memory/feedback_issue_closure_checklist.md) — Always re-read GitHub issues before closing to verify all tasks complete
 - [Version numbering](memory/feedback_version_numbering.md) — n8n workflow display names must match docs; use 3-level semver (V0.8.1)
 - [Issue closure discipline](memory/feedback_issue_closure_discipline.md) — Proactively audit open issues; don't let implemented work accumulate as "open"
+- [Issue progress checklists](memory/feedback_issue_progress_checklists.md) — Maintain task list checklists on multi-step issues; update incrementally as work completes
+
+## Upcoming
+- [Mailgun email setup](memory/project_resend_email.md) — Mailgun (existing Flex plan) replacing Gmail for campaign notifications. 3 domains, exhibitions@ addresses. Issues #50, #51.
 
 ## References
 - [Field mapping spec](../../docs/knowledge/field-mapping-spec.md) — consolidated AA export mapping reference
@@ -123,5 +133,6 @@
 - **Firecrawl credential updated (2026-03-17)**: Old credential `"Fire Crawl Web Crawler"` (`bELMVFmTqYBfSYgx`) replaced with `"Firecrawl account"` (`Mv9l4N593kDPmnd0`). All skill templates updated.
 - **n8n MCP node names with apostrophes**: Node names containing apostrophes (e.g., "When clicking 'Execute workflow'") cause `addConnection` to fail with "Source node not found". Workaround: use the node's UUID `id` instead of `name` in connection operations.
 - **n8n Reference Workflow**: `o6oYKsfttQnm4n7t` ("Claude n8n Common Nodes Reference") — contains 7 correctly configured production nodes (Manual Trigger, Set, Firecrawl, chainLlm, lmChatOpenAi, outputParserStructured with autoFix LLM). Use `n8n_get_workflow(id: "o6oYKsfttQnm4n7t", mode: "full")` to extract verified node configs.
+- **Airtable Metadata API cannot update singleSelect choices**: [gotcha](memory/gotcha_airtable_metadata_singleselect.md) — PATCH returns INVALID_REQUEST_UNKNOWN. Must add choices manually in Airtable UI.
 - Airtable `airtable-cli` npm package is broken (v0.1.6) — use direct REST API via curl
 - System python3 is 3.9.6; pip installs may target 3.11 — use `python3 -m pip install` to match

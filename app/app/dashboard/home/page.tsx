@@ -1,5 +1,5 @@
 import { auth } from "@/auth"
-import { getApprovedArtists, getArtworks, getCampaigns, getExportLogs } from "@/lib/airtable/client"
+import { getArtworks, getCampaigns, getExportLogs } from "@/lib/airtable/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -66,12 +66,15 @@ export default async function HomePage() {
   const session = await auth()
 
   // Fetch data in parallel
-  const [approvedArtists, approvedArtworks, campaigns, exportLogs] = await Promise.all([
-    getApprovedArtists().catch(() => []),
+  const [approvedArtworks, campaigns, exportLogs] = await Promise.all([
     getArtworks('{Status} = "Approved for Export"').catch(() => []),
     getCampaigns().catch(() => []),
     getExportLogs().catch(() => []),
   ])
+
+  // Derive artist count from unique artists linked to approved artworks
+  const uniqueArtistIds = new Set(approvedArtworks.flatMap((aw) => aw.artistIds))
+  const approvedArtistCount = uniqueArtistIds.size
 
   const activeCampaigns = campaigns.filter((c) => c.artistIds.length > 0)
 
@@ -110,7 +113,7 @@ export default async function HomePage() {
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
           {[
-            { title: "Artists Ready", value: approvedArtists.length, label: "Approved for export", icon: Users, bg: "from-blue-50 to-white dark:from-blue-950/30 dark:to-card", iconColor: "text-blue-500" },
+            { title: "Artists Ready", value: approvedArtistCount, label: "With approved artworks", icon: Users, bg: "from-blue-50 to-white dark:from-blue-950/30 dark:to-card", iconColor: "text-blue-500" },
             { title: "Artworks Ready", value: approvedArtworks.length, label: "Approved for export", icon: Image, bg: "from-violet-50 to-white dark:from-violet-950/30 dark:to-card", iconColor: "text-violet-500" },
             { title: "Total Exports", value: exportLogs.length, label: "All time", icon: FileDown, bg: "from-emerald-50 to-white dark:from-emerald-950/30 dark:to-card", iconColor: "text-emerald-500" },
             { title: "Active Campaigns", value: activeCampaigns.length, label: "With submissions", icon: Megaphone, bg: "from-amber-50 to-white dark:from-amber-950/30 dark:to-card", iconColor: "text-amber-500" },

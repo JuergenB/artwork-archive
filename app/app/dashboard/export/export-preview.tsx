@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ChevronDown, ChevronRight, Download, Eye, Users, ImageIcon, Check, ExternalLink, Loader2 } from "lucide-react"
+import { AlertTriangle, ChevronDown, ChevronRight, Download, Eye, Users, ImageIcon, Check, ExternalLink, Loader2 } from "lucide-react"
 import type { Campaign, Artist, Artwork } from "@/lib/types"
 import type { ExportPreviewData, ExportPreviewArtist, ExportPreviewArtwork } from "@/app/api/export/preview/route"
 import { ArtistDetailSheet, ArtworkDetailSheet } from "./record-detail-sheet"
@@ -53,6 +53,7 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
     emailSubject: string
     emailBody: string
     exportLogId: string
+    enrichmentWarning?: string | null
   } | null>(null)
 
   // Load "All Campaigns" on mount
@@ -103,7 +104,7 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
     if (!previewData || previewData.totalArtists === 0) return
     const msg = testMode
       ? `Test export: ${previewData.totalArtists} artists and ${previewData.totalArtworks} artworks.\n\nCSVs will be generated but Airtable records will NOT be updated.`
-      : `Export ${previewData.totalArtists} artists and ${previewData.totalArtworks} artworks?\n\nThis will generate CSV files and mark all records as "Exported" in Airtable.`
+      : `Export ${previewData.totalArtists} artists and ${previewData.totalArtworks} artworks?\n\nThis will generate CSV files and mark artwork records as "Exported" in Airtable.`
     if (!confirm(msg)) return
 
     setExporting(true)
@@ -249,12 +250,26 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
             </Card>
           </div>
 
+          {/* Enrichment Warning */}
+          {previewData.enrichmentWarning && (
+            <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
+              <CardContent className="py-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    {previewData.enrichmentWarning}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* No Data State */}
           {previewData.totalArtists === 0 && (
             <Card>
               <CardContent className="py-12 text-center">
                 <p className="text-muted-foreground">
-                  No approved records found for this campaign. Artists and artworks must be set to
+                  No approved artworks found for this campaign. Artworks must be set to
                   &ldquo;Approved for Export&rdquo; status in Airtable before they appear here.
                 </p>
               </CardContent>
@@ -382,6 +397,13 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
                         </Badge>
                       )}
                     </div>
+
+                    {exportResult.enrichmentWarning && (
+                      <div className="flex items-start gap-2 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-md p-3">
+                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span className="text-sm">{exportResult.enrichmentWarning}</span>
+                      </div>
+                    )}
 
                     <div className="flex gap-3">
                       <a href={exportResult.artistCsvUrl} target="_blank" rel="noopener noreferrer">

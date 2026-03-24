@@ -40,8 +40,9 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 
 ### Status Flow
 
-- **Artists:** `Pending - Imported` → `Pending - Enriched` → (human review)
-- **Artworks:** (created during intake) → `Pending - Enriched` (after image classification). Artworks inherit artist eligibility via `Status (from Artist)` Lookup field — only artworks whose artist is "Pending - Enriched" are classified.
+- **Artists (enrichment only, issue #91):** `Pending - Imported` → `Pending - Enriched` → `Needs Review` or `On Hold` (curator flags). Artist status is **never changed by the export pipeline**. Legacy export values (`Approved for Export`, `Exported`, `Accepted`) have been removed from the Airtable single-select field.
+- **Artworks (enrichment + export):** `Pending - Imported` → `Pending - Enriched` (after image classification) → `Approved for Export` → `Exported` → `Accepted`. Artworks inherit artist eligibility via `Status (from Artist)` Lookup field — only artworks whose artist is "Pending - Enriched" are classified.
+- **Export pipeline:** Starts from artworks with status "Approved for Export". Artists are resolved by ID from linked artworks. Guards exclude artists who are `Needs Review`, `On Hold`, or missing `Artist Profile (AI)` — their artworks are excluded with a warning message.
 
 ---
 
@@ -59,16 +60,17 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 7. Aggregate success IDs → update Import Log
 8. On success: update artist status to "Pending", get campaign email info
 9. **Notification Email Prep** (Set node) — resolves all 9 placeholders in admin + submitter templates using `.replaceAll()` chains
-10. AI Email Beautifier (GPT-4o via LangChain) → send admin notification via Gmail
+10. AI Email Beautifier (GPT-4o via LangChain) → send admin notification via Mailgun HTTP API
 11. ActiveCampaign CRM: create/update contact, add to lists, resolve/create tags
 
-**Supported email placeholders:** `[[campaign_name]]`, `[[artist_first_name]]`, `[[artist_last_name]]`, `[[artist_email]]`, `[[submission_id]]`, `[[submission_date]]`, `[[artwork_count]]`, `[[airtable_record_url]]`, `[[paperform_submission_url]]`
+**Supported email placeholders:** `[[campaign_name]]`, `[[artist_first_name]]`, `[[artist_last_name]]`, `[[artist_email]]`, `[[submission_id]]`, `[[submission_date]]`, `[[artwork_count]]`, `[[airtable_record_url]]`, `[[paperform_submission_url]]`, `[[support_email]]`
 
-**Note:** Submitter confirmation email templates are prepared but NOT sent yet — requires per-campaign sender configuration (see issues #50, #51).
+**Note:** Submitter confirmation email templates are prepared but NOT sent yet — requires submitter send node (see issue #50).
 
-**Integrations:** Airtable, Gmail, ActiveCampaign, OpenAI (GPT-4o)
+**Integrations:** Airtable, Mailgun (HTTP API), ActiveCampaign, OpenAI (GPT-4o)
 
 ### Changelog
+- **V1.7 (2026-03-23):** Gmail → Mailgun migration (#51) — replaced Gmail OAuth2 send node with HTTP Request node calling Mailgun REST API (`POST /v3/mail.arterial.org/messages`). All emails now sent from `exhibitions@mail.arterial.org` (single verified domain, 10/10 mail-tester score). Added per-brand Reply-To via new `Reply-To Email` field on Campaigns table. Added per-brand From display name via new `Email Display Name` field on Campaigns table. Added `[[support_email]]` placeholder to submitter templates. Added Arterial 501(c)(3) footer to AI Email Beautifier prompt ("This email was sent by Arterial, the 501(c)(3) nonprofit behind [Brand Name]"). 3 new Set node assignments: Reply To Email, From Email, Support Email. Removed Gmail node and unused Mailgun node.
 - **V1.6 (2026-03-16):** Dimension field renames (#72) — renamed `Height` → `Height (AI)`, `Width` → `Width (AI)`, `Depth` → `Depth (AI)` in Create or update Artworks node, matching Airtable field renames for AI-extracted dimension data.
 - **V1.5 (2026-03-13):** Partner Organizations linking (#68) — added `partner_id` field to Capture Artist & Campaign Data (extracted from `fieldsByKey.partner_id` with `|| {}` fallback). Create or update Artist record appends partner to existing Partner Organizations array (concat + dedup, same pattern as Campaigns). Create or update Artworks wraps partner_id in array. Non-partner submissions pass empty array (no link). Tested via Haywood Grad Show landing page.
 - **V1.4 (2026-03-12):** Fixed broken Notification Email Prep node — 8 fields were using `$json['...']` (assumes previous node) instead of explicit `$('NodeName')` references. 4 fields resolved to `undefined` (Admin Notification Email Addresses, Submitter Email Address, Campaign Logo Small/Medium), preventing admin notification emails from sending. All expressions now use explicit node references: `$('Get Campaign Email Info2')` for campaign data, `$('Normalize Fields by Key')` for submission data.

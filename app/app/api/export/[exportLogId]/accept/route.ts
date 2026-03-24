@@ -22,19 +22,13 @@ export async function POST(
       )
     }
 
-    // Parse stored record IDs
-    const artistIds = exportLog.artistRecordIds?.split(",").filter(Boolean) ?? []
+    // Parse stored record IDs — only artwork statuses are updated (artist status decoupled per #91)
     const artworkIds = exportLog.artworkRecordIds?.split(",").filter(Boolean) ?? []
 
-    // Update all records to "Accepted"
-    await Promise.all([
-      artistIds.length > 0
-        ? updateRecordStatuses("AIRTABLE_ARTISTS_TABLE_ID", artistIds, "Accepted")
-        : Promise.resolve(),
-      artworkIds.length > 0
-        ? updateRecordStatuses("AIRTABLE_ARTWORKS_TABLE_ID", artworkIds, "Accepted")
-        : Promise.resolve(),
-    ])
+    // Update artwork records to "Accepted"
+    if (artworkIds.length > 0) {
+      await updateRecordStatuses("AIRTABLE_ARTWORKS_TABLE_ID", artworkIds, "Accepted")
+    }
 
     // Update export log status
     const updated = await updateExportLog(exportLogId, {

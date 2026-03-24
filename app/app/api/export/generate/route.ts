@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import {
-  getApprovedArtists,
+  getArtistsByIds,
   getArtworks,
   getCampaigns,
   getPartnerOrgs,
@@ -27,39 +27,78 @@ export async function POST(request: NextRequest) {
     const triggeredBy: string = body.triggeredBy ?? "Unknown"
     const testMode: boolean = body.testMode === true
 
-    // 1. Fetch all data in parallel
-    const [rawArtists, rawArtworks, allCampaigns, allPartnerOrgs] = await Promise.all([
-      getApprovedArtists(),
+    // 1. Fetch approved artworks + reference data in parallel
+    const [rawArtworks, allCampaigns, allPartnerOrgs] = await Promise.all([
       getArtworks('{Status} = "Approved for Export"'),
       getCampaigns(),
       getPartnerOrgs(),
     ])
 
-    const maps = buildLookupMaps(allCampaigns, allPartnerOrgs, rawArtists)
-
-    // 2. Filter by campaign if specified
-    let artists = rawArtists
+    // 2. Filter artworks by campaign if specified
     let artworks = rawArtworks
     let campaignName = "All Campaigns"
 
     if (campaignId && campaignId !== "all") {
-      const campaign = maps.campaignMap.get(campaignId)
-      campaignName = campaign?.campaignName ?? "Unknown Campaign"
-
       artworks = artworks.filter((aw) => aw.campaignIds.includes(campaignId))
-      const artistIdsWithArtworks = new Set(artworks.flatMap((aw) => aw.artistIds))
-      artists = artists.filter((a) => artistIdsWithArtworks.has(a.id))
-    } else {
-      const artistIdsWithArtworks = new Set(artworks.flatMap((aw) => aw.artistIds))
-      artists = artists.filter((a) => artistIdsWithArtworks.has(a.id))
+      const campaign = allCampaigns.find((c) => c.id === campaignId)
+      campaignName = campaign?.campaignName ?? "Unknown Campaign"
     }
 
-    if (artists.length === 0 && artworks.length === 0) {
+    if (artworks.length === 0) {
       return NextResponse.json(
-        { error: "No approved records found to export" },
+        { error: "No approved artworks found to export" },
         { status: 400 }
       )
     }
+
+    // 3. Derive artists from approved artworks (artwork-driven resolution)
+    const uniqueArtistIds = [...new Set(artworks.flatMap((aw) => aw.artistIds))]
+    const rawArtists = await getArtistsByIds(uniqueArtistIds)
+
+    // Guard: exclude artists on hold or flagged for review
+    const BLOCKED_STATUSES = new Set(["Needs Review", "On Hold"])
+    const blockedArtists = rawArtists.filter((a) => BLOCKED_STATUSES.has(a.status))
+    const blockedArtistIds = new Set(blockedArtists.map((a) => a.id))
+
+    // Guard: exclude artists without AI profile (not yet enriched)
+    const eligibleArtists = rawArtists.filter((a) => !blockedArtistIds.has(a.id))
+    const unenrichedArtists = eligibleArtists.filter((a) => !a.profileAi)
+    const artists = eligibleArtists.filter((a) => a.profileAi)
+
+    // Remove artworks belonging to blocked or unenriched artists
+    const excludedArtistIds = new Set([...blockedArtistIds, ...unenrichedArtists.map((a) => a.id)])
+    const excludedArtworkCount = artworks.filter((aw) =>
+      aw.artistIds.some((id) => excludedArtistIds.has(id))
+    ).length
+    artworks = artworks.filter((aw) =>
+      !aw.artistIds.some((id) => excludedArtistIds.has(id))
+    )
+
+    // Build warning messages
+    const warnings: string[] = []
+    if (blockedArtists.length > 0) {
+      const blockedArtworkCount = rawArtworks.filter((aw) =>
+        aw.artistIds.some((id) => blockedArtistIds.has(id))
+      ).length
+      warnings.push(`${blockedArtworkCount} artwork(s) excluded because ${blockedArtists.length} artist(s) are flagged as ${blockedArtists.map((a) => `${a.fullName || a.email || a.id} (${a.status})`).join(", ")}`)
+    }
+    if (unenrichedArtists.length > 0) {
+      const unenrichedIds = new Set(unenrichedArtists.map((a) => a.id))
+      const unenrichedArtworkCount = rawArtworks.filter((aw) =>
+        aw.artistIds.some((id) => unenrichedIds.has(id))
+      ).length
+      warnings.push(`${unenrichedArtworkCount} artwork(s) excluded because ${unenrichedArtists.length} artist(s) haven't been enriched yet: ${unenrichedArtists.map((a) => a.fullName || a.email || a.id).join(", ")}`)
+    }
+    const enrichmentWarning = warnings.length > 0 ? warnings.join("\n") : null
+
+    if (artists.length === 0 && artworks.length === 0) {
+      return NextResponse.json(
+        { error: enrichmentWarning || "No approved records found to export" },
+        { status: 400 }
+      )
+    }
+
+    const maps = buildLookupMaps(allCampaigns, allPartnerOrgs, artists)
 
     // 3. Create Export Log with "In Progress" status
     const exportId = `${testMode ? "TEST" : "EXP"}-${Date.now()}`
@@ -75,7 +114,10 @@ export async function POST(request: NextRequest) {
       "Triggered By": triggeredBy,
       "Artist Record IDs": artists.map((a) => a.id).join(","),
       "Artwork Record IDs": artworks.map((aw) => aw.id).join(","),
-      "Export Notes": testMode ? "Test export — Airtable records not updated" : "",
+      "Export Notes": [
+        testMode ? "Test export — Airtable records not updated" : "",
+        enrichmentWarning ?? "",
+      ].filter(Boolean).join("\n") || "",
     })
     exportLogId = exportLog.id
 
@@ -163,15 +205,11 @@ export async function POST(request: NextRequest) {
       "Email Body": emailBody,
     })
 
-    // 10. Update artist/artwork statuses to "Exported" (skip in test mode)
+    // 10. Update artwork statuses to "Exported" (skip in test mode)
+    // Artist statuses are NOT updated — decoupled per issue #91
     if (!testMode) {
-      const artistIds = artists.map((a) => a.id)
       const artworkIds = artworks.map((aw) => aw.id)
-
-      await Promise.all([
-        updateRecordStatuses("AIRTABLE_ARTISTS_TABLE_ID", artistIds, "Exported"),
-        updateRecordStatuses("AIRTABLE_ARTWORKS_TABLE_ID", artworkIds, "Exported"),
-      ])
+      await updateRecordStatuses("AIRTABLE_ARTWORKS_TABLE_ID", artworkIds, "Exported")
     }
 
     return NextResponse.json({
@@ -184,6 +222,7 @@ export async function POST(request: NextRequest) {
       campaignName,
       emailSubject,
       emailBody,
+      enrichmentWarning,
     })
   } catch (error) {
     console.error("Export generation error:", error)

@@ -68,14 +68,17 @@ Paperform (online submission form)
                           v
                    (Human Review)
                           |
+            Artwork status: "Approved for Export"
+                          |
                           v
 +--------------------------------------------------+
 |  Next.js Export Utility (Phase C)                |
 |  (Vercel — web UI + webhook API)                 |
 |                                                  |
-|  Load Field Mappings --> Fetch Records -->        |
+|  Fetch Approved Artworks --> Resolve Artists -->  |
+|  Guard (enriched? not on hold?) -->              |
 |  Transform Data --> Generate CSVs -->             |
-|  Update Status --> Write Export Log               |
+|  Update Artwork Status --> Write Export Log       |
 +--------------------------------------------------+
                           |
                           v
@@ -89,7 +92,7 @@ Paperform (online submission form)
 - **Forms:** [Paperform](https://paperform.co) (webhook integration)
 - **Web Scraping:** [Firecrawl](https://firecrawl.dev) (social link extraction from artist websites)
 - **CRM:** [ActiveCampaign](https://www.activecampaign.com)
-- **Email:** Gmail (OAuth2)
+- **Email:** [Mailgun](https://mailgun.com) (HTTP API — `mail.arterial.org` domain)
 
 ## Workflows
 

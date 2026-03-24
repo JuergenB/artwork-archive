@@ -265,6 +265,12 @@ export async function getApprovedArtists(): Promise<Artist[]> {
   return getArtists('{Status} = "Approved for Export"')
 }
 
+export async function getArtistsByIds(ids: string[]): Promise<Artist[]> {
+  if (ids.length === 0) return []
+  const formula = `OR(${ids.map((id) => `RECORD_ID() = "${id}"`).join(",")})`
+  return getArtists(formula)
+}
+
 export async function getEnrichedArtists(): Promise<Artist[]> {
   return getArtists('{Status} = "Pending - Enriched"')
 }

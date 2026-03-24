@@ -1,12 +1,15 @@
 // ─── Status Types ────────────────────────────────────────
+// Artist status tracks enrichment only (issue #91).
+// Export lifecycle is tracked on artworks, not artists.
+// "Approved for Export" | "Exported" | "Accepted" retained for historical records only.
 export type ArtistStatus =
   | "Pending - Imported"
   | "In Progress"
   | "Pending - Enriched"
   | "Needs Review"
-  | "Approved for Export"
-  | "Exported"
-  | "Accepted"
+  | "Approved for Export" // legacy — not set by export pipeline
+  | "Exported"            // legacy — not set by export pipeline
+  | "Accepted"            // legacy — not set by export pipeline
   | "On Hold"
   | "Error - Data"
   | "Error - Automation"
