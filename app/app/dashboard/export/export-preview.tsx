@@ -20,6 +20,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { AlertTriangle, ChevronDown, ChevronRight, Download, Eye, Info, Users, ImageIcon, Check, ExternalLink, Loader2 } from "lucide-react"
 import type { Campaign, Artist, Artwork } from "@/lib/types"
 import type { ExportPreviewData, ExportPreviewArtist, ExportPreviewArtwork } from "@/app/api/export/preview/route"
@@ -44,6 +50,8 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
   const [selectedArtwork, setSelectedArtwork] = useState<{ artwork: ExportPreviewArtwork; artistName: string | null } | null>(null)
   const [testMode, setTestMode] = useState(true)
   const [exporting, setExporting] = useState(false)
+  const [showEmailPreview, setShowEmailPreview] = useState(false)
+  const [copied, setCopied] = useState<"subject" | "body" | "to" | null>(null)
   const [exportResult, setExportResult] = useState<{
     artistCsvUrl: string
     artworkCsvUrl: string
@@ -130,6 +138,12 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
     } finally {
       setExporting(false)
     }
+  }
+
+  async function copyToClipboard(text: string, field: "subject" | "body" | "to") {
+    await navigator.clipboard.writeText(text)
+    setCopied(field)
+    setTimeout(() => setCopied(null), 2000)
   }
 
   // Group artworks by artist
@@ -451,17 +465,29 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
                       <p className="text-sm text-muted-foreground mb-2">
                         Send the CSV links to the Artwork Archive team:
                       </p>
-                      <a
-                        href={`mailto:?subject=${encodeURIComponent(exportResult.emailSubject)}&body=${encodeURIComponent(exportResult.emailBody)}`}
-                        onClick={() => {
-                          fetch(`/api/export/${exportResult.exportLogId}/deliver`, { method: "POST" })
-                        }}
-                      >
-                        <Button variant="default" className="gap-2">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="default"
+                          className="gap-2"
+                          onClick={() => {
+                            setShowEmailPreview(true)
+                            fetch(`/api/export/${exportResult.exportLogId}/deliver`, { method: "POST" })
+                          }}
+                        >
                           <ExternalLink className="h-4 w-4" />
-                          Compose Email to AA Team
+                          Copy Email
                         </Button>
-                      </a>
+                        <a
+                          href={`mailto:?subject=${encodeURIComponent(exportResult.emailSubject)}&body=${encodeURIComponent(exportResult.emailBody)}`}
+                          onClick={() => {
+                            fetch(`/api/export/${exportResult.exportLogId}/deliver`, { method: "POST" })
+                          }}
+                        >
+                          <Button variant="ghost" className="gap-2">
+                            Compose
+                          </Button>
+                        </a>
+                      </div>
                     </div>
 
                     <div className="border-t pt-4">
@@ -476,6 +502,51 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
           )}
         </>
       )}
+
+      {/* Email Preview Dialog */}
+      <Dialog open={showEmailPreview} onOpenChange={setShowEmailPreview}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Email Preview</DialogTitle>
+          </DialogHeader>
+          {exportResult && (
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-sm font-medium text-muted-foreground">Subject</label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => copyToClipboard(exportResult.emailSubject, "subject")}
+                  >
+                    {copied === "subject" ? "Copied!" : "Copy"}
+                  </Button>
+                </div>
+                <div className="rounded border bg-muted/50 px-3 py-2 text-sm select-all">
+                  {exportResult.emailSubject}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-sm font-medium text-muted-foreground">Body</label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => copyToClipboard(exportResult.emailBody, "body")}
+                  >
+                    {copied === "body" ? "Copied!" : "Copy"}
+                  </Button>
+                </div>
+                <div className="rounded border bg-muted/50 px-3 py-2 text-sm whitespace-pre-wrap select-all font-mono">
+                  {exportResult.emailBody}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Detail Sheets */}
       <ArtistDetailSheet
