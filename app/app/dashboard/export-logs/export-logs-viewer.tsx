@@ -4,6 +4,12 @@ import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   Table,
   TableBody,
   TableCell,
@@ -56,6 +62,8 @@ export function ExportLogsViewer() {
   const [rejectNotes, setRejectNotes] = useState("")
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [hideTests, setHideTests] = useState(false)
+  const [previewLog, setPreviewLog] = useState<ExportLog | null>(null)
+  const [copied, setCopied] = useState<"subject" | "body" | "to" | null>(null)
 
   async function fetchLogs() {
     try {
@@ -153,6 +161,17 @@ export function ExportLogsViewer() {
     } finally {
       setActionLoading(null)
     }
+  }
+
+  async function copyToClipboard(text: string, field: "subject" | "body" | "to") {
+    await navigator.clipboard.writeText(text)
+    setCopied(field)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  function handlePreviewAndDeliver(log: ExportLog) {
+    setPreviewLog(log)
+    handleDeliver(log.id)
   }
 
   const testCount = logs.filter((l) => l.exportType === "Preview").length
@@ -255,17 +274,27 @@ export function ExportLogsViewer() {
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  {/* Compose Email — available when Exported */}
+                  {/* Email actions — available when Exported */}
                   {log.exportStatus === "Exported" && (
-                    <a
-                      href={buildMailtoLink(log)}
-                      onClick={() => handleDeliver(log.id)}
-                      className="inline-flex"
-                    >
-                      <Button variant="outline" size="sm" disabled={actionLoading === log.id}>
-                        Compose Email
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePreviewAndDeliver(log)}
+                        disabled={actionLoading === log.id}
+                      >
+                        Copy Email
                       </Button>
-                    </a>
+                      <a
+                        href={buildMailtoLink(log)}
+                        onClick={() => handleDeliver(log.id)}
+                        className="inline-flex"
+                      >
+                        <Button variant="ghost" size="sm" disabled={actionLoading === log.id}>
+                          Compose
+                        </Button>
+                      </a>
+                    </>
                   )}
 
                   {/* Accept — available when Exported or Delivered */}
@@ -345,6 +374,72 @@ export function ExportLogsViewer() {
           ))}
         </TableBody>
       </Table>
+
+      {/* Email Preview Dialog */}
+      <Dialog open={previewLog !== null} onOpenChange={(open) => { if (!open) setPreviewLog(null) }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Email Preview</DialogTitle>
+          </DialogHeader>
+          {previewLog && (
+            <div className="space-y-4">
+              {/* To */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-sm font-medium text-muted-foreground">To</label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => copyToClipboard(previewLog.emailRecipients ?? "", "to")}
+                  >
+                    {copied === "to" ? "Copied!" : "Copy"}
+                  </Button>
+                </div>
+                <div className="rounded border bg-muted/50 px-3 py-2 text-sm select-all">
+                  {previewLog.emailRecipients || "—"}
+                </div>
+              </div>
+
+              {/* Subject */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-sm font-medium text-muted-foreground">Subject</label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => copyToClipboard(previewLog.emailSubject ?? "", "subject")}
+                  >
+                    {copied === "subject" ? "Copied!" : "Copy"}
+                  </Button>
+                </div>
+                <div className="rounded border bg-muted/50 px-3 py-2 text-sm select-all">
+                  {previewLog.emailSubject || "—"}
+                </div>
+              </div>
+
+              {/* Body */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-sm font-medium text-muted-foreground">Body</label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => copyToClipboard(previewLog.emailBody ?? "", "body")}
+                  >
+                    {copied === "body" ? "Copied!" : "Copy"}
+                  </Button>
+                </div>
+                <div className="rounded border bg-muted/50 px-3 py-2 text-sm whitespace-pre-wrap select-all font-mono">
+                  {previewLog.emailBody || "—"}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
