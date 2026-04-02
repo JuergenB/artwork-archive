@@ -128,9 +128,10 @@ export function buildArtistCsvRow(artist: EnrichedArtist): string[] {
 // ─── Artwork CSV Row Builder ────────────────────────────
 
 /**
- * Map an enriched artwork to a 68-element array matching AA artwork template.
+ * Map an enriched artwork to a 69-element array matching AA artwork template.
  * Applies all transforms (field_concatenate, ai_tags, collections_expand,
  * dimension_format, date_format, pipe_separate, notes_builder).
+ * Updated 2026-04-02 to match April 2026 AA template (mid-January revision).
  */
 export function buildArtworkCsvRow(artwork: EnrichedArtwork): string[] {
   const row = new Array<string>(AA_ARTWORK_COLUMNS.length).fill("")
@@ -172,12 +173,12 @@ export function buildArtworkCsvRow(artwork: EnrichedArtwork): string[] {
   })
   // Col 28: Collections (already resolved in enrichment)
   row[28] = artwork.collections
-  // Cols 29-65: Location, Sale, Acquisition, Attribution, etc. (not mapped — empty)
-  // Col 66: Piece Image URLs (pipe-separated)
-  row[66] = pipeSeparate(artwork.pieceImageUrls)
-  // Col 67: Additional File URLs (not mapped — empty)
-  // Col 68: Artist Email (added — not in AA template, needed to match artworks to artists)
-  row[68] = artwork.artistEmail ?? ""
+  // Cols 29-37: Location (not mapped — empty)
+  // Col 38: Sale Location (not mapped — empty, added in Jan 2026 template revision)
+  // Cols 39-66: Sale, Acquisition, Attribution, Appraisal, Condition, Weight, Provenance (not mapped — empty)
+  // Col 67: Piece Image Filename or URL (pipe-separated)
+  row[67] = pipeSeparate(artwork.pieceImageUrls)
+  // Col 68: Additional File Filename or URL (not mapped — empty)
 
   return row
 }
@@ -186,32 +187,41 @@ export function buildArtworkCsvRow(artwork: EnrichedArtwork): string[] {
 
 /**
  * Generate a complete CSV string from headers and rows.
+ * If helperRow is provided, it is emitted as row 2 (AA's gray helper text row).
  */
 // UTF-8 BOM — tells Excel to read the file as UTF-8 instead of Latin-1
 const UTF8_BOM = "\uFEFF"
 
-export function generateCsv(headers: string[], rows: string[][]): string {
+export function generateCsv(headers: string[], rows: string[][], helperRow?: string[]): string {
   const headerLine = rowToCsv(headers)
-  const dataLines = rows.map(rowToCsv)
-  return UTF8_BOM + [headerLine, ...dataLines].join("\n")
+  const lines = [headerLine]
+  if (helperRow) {
+    lines.push(rowToCsv(helperRow))
+  }
+  lines.push(...rows.map(rowToCsv))
+  return UTF8_BOM + lines.join("\n")
 }
 
 /**
  * Generate the artist CSV for AA import.
+ * Row 1: column headers, Row 2: gray helper text, Row 3+: data.
  */
 export function generateArtistCsv(artists: EnrichedArtist[]): string {
   const headers = AA_ARTIST_COLUMNS.map((col) => col.name)
+  const helperRow = AA_ARTIST_COLUMNS.map((col) => col.helperText)
   const rows = artists.map(buildArtistCsvRow)
-  return generateCsv(headers, rows)
+  return generateCsv(headers, rows, helperRow)
 }
 
 /**
  * Generate the artwork CSV for AA import.
+ * Row 1: column headers, Row 2: gray helper text, Row 3+: data.
  */
 export function generateArtworkCsv(artworks: EnrichedArtwork[]): string {
   const headers = AA_ARTWORK_COLUMNS.map((col) => col.name)
+  const helperRow = AA_ARTWORK_COLUMNS.map((col) => col.helperText)
   const rows = artworks.map(buildArtworkCsvRow)
-  return generateCsv(headers, rows)
+  return generateCsv(headers, rows, helperRow)
 }
 
 // ─── File Naming ────────────────────────────────────────

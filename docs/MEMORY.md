@@ -91,9 +91,13 @@
 - [Version numbering](memory/feedback_version_numbering.md) — n8n workflow display names must match docs; use 3-level semver (V0.8.1)
 - [Issue closure discipline](memory/feedback_issue_closure_discipline.md) — Proactively audit open issues; don't let implemented work accumulate as "open"
 - [Issue progress checklists](memory/feedback_issue_progress_checklists.md) — Maintain task list checklists on multi-step issues; update incrementally as work completes
+- [Preserve Airtable node schema in MCP updates](memory/feedback_mcp_airtable_schema_preservation.md) — Never hand-build replacement schema; extract original, transform with jq, verify entry count
 
 ## Upcoming
 - [Mailgun email setup](memory/project_resend_email.md) — Mailgun (existing Flex plan) replacing Gmail for campaign notifications. 3 domains, exhibitions@ addresses. Issues #50, #51.
+
+## Export Template
+- [AA template April 2026 update](memory/project_aa_template_april_2026.md) — First export rejected; template changed mid-Jan 2026 (added Sale Location, renamed 4 cols, helper text row required)
 
 ## References
 - [Field mapping spec](../../docs/knowledge/field-mapping-spec.md) — consolidated AA export mapping reference

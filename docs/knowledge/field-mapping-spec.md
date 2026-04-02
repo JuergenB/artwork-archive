@@ -81,9 +81,9 @@ Title (2), Birth Date (4), Death Date (5), Secondary Email (7), Phone (8)*, Mobi
 
 ---
 
-## Artwork Mappings (AA has 68 columns)
+## Artwork Mappings (AA has 69 columns)
 
-> Rebuilt 2026-03-18 from AA-Artworks-Template.xlsx. Previous version had 63 columns — indices were off from col 10 onward.
+> Updated 2026-04-02 from April 2026 AA template (mid-January 2026 revision). Previous version (December 2025) had 68 columns — missing `Sale Location` at index 38.
 
 ### Direct Mappings
 
@@ -99,9 +99,8 @@ Title (2), Birth Date (4), Death Date (5), Secondary Email (7), Phone (8)*, Mobi
 | 9 | Depth | `Depth (AI)` | `dimension_format` | | AI-extracted from Description |
 | 22 | Creation Date | `Year Created Date` | `date_format` | | Usually yyyy format |
 | 25 | Description | `Description` | none | | Artist-entered |
-| 66 | Piece Image URLs | `Piece Image URLs` | `pipe_separate` | | Use Paperform S3/CDN URL — NEVER Airtable thumbnail |
-| 67 | Additional File URLs | — | | | Left blank for now |
-| 67 | Artist Email | `Artist Email` | none | | **Note: AA template has Artist Email as a non-column identifier field appended after col 67** |
+| 67 | Piece Image Filename or URL | `Piece Image URLs` | `pipe_separate` | | Use Paperform S3/CDN URL — NEVER Airtable thumbnail |
+| 68 | Additional File Filename or URL | — | | | Left blank for now |
 
 ### Concatenation Mappings (artist value + AI appended)
 
@@ -156,7 +155,7 @@ Always use `Piece Image URLs` field (Paperform S3/CDN, permanent). NEVER use `Pi
 
 ### Columns Left Blank
 
-Inventory Number (3), Dimension Override (10), Paper Height/Width (11-12), Framed fields (13-16), Price (18), Fair Market/Wholesale/Insurance Value (19-21), Circa (23), Creation date override (24), Current Location fields (29-36), Sale/Donation/Gift fields (37-52), Attribution Line (53), Signed fields (54-55), Edition fields (56-57), Appraisal fields (58-61), Condition fields (62-63), Weight (64), Provenance Info (65), Additional File URLs (67)
+Inventory Number (3), Dimension Override (10), Paper Height/Width (11-12), Framed fields (13-16), Price (18), Fair Market/Wholesale/Insurance Value (19-21), Circa (23), Creation date override (24), Current Location fields (29-36), Sale/Donation/Gift fields (37-44), Acquisition fields (45-53), Attribution Line (54), Signed fields (55-56), Edition fields (57-58), Appraisal fields (59-62), Condition fields (63-64), Weight (65), Provenance (66), Additional File Filename or URL (68)
 
 ---
 
@@ -233,4 +232,4 @@ Current implementation builds for our Airtable as the single source. The mapping
 - Export pipeline: #79
 - Capitalization detection: #57
 - Sample data: `docs/knowledge/artwork archive example data/`
-- AA templates: `docs/knowledge/artwork archive formats/`
+- AA templates: `docs/knowledge/artwork archive formats/April 2026/` (supersedes December 2025 version)

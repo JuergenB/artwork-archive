@@ -282,11 +282,11 @@ describe("buildArtworkCsvRow", () => {
     expect(row[28]).toBe("Campaign A, Org 2026, Org")
   })
 
-  it("applies pipe_separate to Piece Image URLs", () => {
+  it("applies pipe_separate to Piece Image Filename or URL", () => {
     const row = buildArtworkCsvRow(makeArtwork({
       pieceImageUrls: '["https://cdn.example.com/a.jpg","https://cdn.example.com/b.jpg"]',
     }))
-    expect(row[66]).toBe("https://cdn.example.com/a.jpg|https://cdn.example.com/b.jpg")
+    expect(row[67]).toBe("https://cdn.example.com/a.jpg|https://cdn.example.com/b.jpg")
   })
 
   it("applies date_format to Creation Date", () => {
@@ -351,9 +351,18 @@ describe("generateArtistCsv", () => {
     expect(headerCount).toBe(40)
   })
 
+  it("includes helper text as row 2", () => {
+    const csv = generateArtistCsv([makeArtist()])
+    const lines = csv.split("\n")
+    const helperLine = lines[1]
+    expect(helperLine).toContain("Required") // First Name is required
+    expect(helperLine).toContain("yes or no (blank)") // Artist field
+    expect(helperLine).toContain("Must be the full public URL to their profile")
+  })
+
   it("includes data rows for multiple artists", () => {
     const csv = generateArtistCsv([makeArtist(), makeArtist({ firstName: "John", lastName: "Smith" })])
-    // CSV has header + 2 data rows (data rows may contain embedded newlines in Notes)
+    // CSV has header + helper text row + data rows
     expect(csv).toContain("Jane")
     expect(csv).toContain("John")
     expect(csv).toContain("Smith")
@@ -368,7 +377,16 @@ describe("generateArtworkCsv", () => {
     expect(firstLine).toContain("Artist First Name")
     expect(firstLine).toContain("Medium")
     expect(firstLine).toContain("Collections")
-    expect(firstLine).toContain("Piece Image URLs")
+    expect(firstLine).toContain("Piece Image Filename or URL")
+  })
+
+  it("includes helper text as row 2", () => {
+    const csv = generateArtworkCsv([makeArtwork()])
+    const lines = csv.split("\n")
+    const helperLine = lines[1]
+    expect(helperLine).toContain("Name of artwork goes here") // Piece Name
+    expect(helperLine).toContain("Enter Number Only: default is inches") // Dimensions
+    expect(helperLine).toContain("Comma separated list of Tags")
   })
 })
 

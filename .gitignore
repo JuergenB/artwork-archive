@@ -7,3 +7,4 @@ node_modules/
 
 # Large data exports (contact CSVs, ~28MB)
 docs/knowledge/feature-existing-artist-check/
+.vercel
