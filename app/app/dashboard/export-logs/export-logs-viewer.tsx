@@ -64,6 +64,7 @@ export function ExportLogsViewer() {
   const [hideTests, setHideTests] = useState(false)
   const [previewLog, setPreviewLog] = useState<ExportLog | null>(null)
   const [copied, setCopied] = useState<"subject" | "body" | "to" | null>(null)
+  const [acceptingLog, setAcceptingLog] = useState<ExportLog | null>(null)
 
   async function fetchLogs() {
     try {
@@ -84,7 +85,7 @@ export function ExportLogsViewer() {
   }, [])
 
   async function handleAccept(logId: string) {
-    if (!confirm("Accept this export? This will mark all records as Accepted in Airtable.")) return
+    setAcceptingLog(null)
     setActionLoading(logId)
     try {
       const res = await fetch(`/api/export/${logId}/accept`, { method: "POST" })
@@ -302,10 +303,10 @@ export function ExportLogsViewer() {
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={() => handleAccept(log.id)}
+                      onClick={() => setAcceptingLog(log)}
                       disabled={actionLoading === log.id}
                     >
-                      {actionLoading === log.id ? "..." : "Accept"}
+                      {actionLoading === log.id ? "Updating..." : "Accept"}
                     </Button>
                   )}
 
@@ -374,6 +375,57 @@ export function ExportLogsViewer() {
           ))}
         </TableBody>
       </Table>
+
+      {/* Accept Confirmation Dialog */}
+      <Dialog open={acceptingLog !== null} onOpenChange={(open) => { if (!open) setAcceptingLog(null) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Accept Export</DialogTitle>
+          </DialogHeader>
+          {acceptingLog && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                This will update the following records in Airtable:
+              </p>
+              <ul className="text-sm space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">&#10003;</span>
+                  <span>
+                    <strong>{acceptingLog.artworkCount ?? 0} artwork(s)</strong> will be marked as <Badge variant="outline" className="bg-green-100 text-green-800 text-[10px] px-1.5 py-0 mx-1">Accepted</Badge>
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">&#10003;</span>
+                  <span>Export log status will change to <Badge variant="outline" className="bg-green-100 text-green-800 text-[10px] px-1.5 py-0 mx-1">Accepted</Badge></span>
+                </li>
+                {acceptingLog.exportType === "Preview" && (
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 mt-0.5">&#10003;</span>
+                    <span>Test label will be removed (export promoted to official)</span>
+                  </li>
+                )}
+              </ul>
+              <p className="text-sm text-muted-foreground">
+                Campaign: <strong>{acceptingLog.campaignNames ?? "All Campaigns"}</strong>
+                <br />
+                Exported: {formatTimestamp(acceptingLog.timestamp)}
+              </p>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setAcceptingLog(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={() => handleAccept(acceptingLog.id)}
+                  disabled={actionLoading === acceptingLog.id}
+                >
+                  {actionLoading === acceptingLog.id ? "Updating..." : "Confirm Accept"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Email Preview Dialog */}
       <Dialog open={previewLog !== null} onOpenChange={(open) => { if (!open) setPreviewLog(null) }}>

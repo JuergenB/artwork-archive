@@ -30,10 +30,17 @@ export async function POST(
       await updateRecordStatuses("AIRTABLE_ARTWORKS_TABLE_ID", artworkIds, "Accepted")
     }
 
-    // Update export log status
-    const updated = await updateExportLog(exportLogId, {
+    // Update export log status — promote test exports to official on accept
+    const updates: Record<string, string> = {
       "Export Status": "Accepted",
-    })
+    }
+    if (exportLog.exportType === "Preview") {
+      updates["Export Type"] = "Full"
+      // Clean up test note from Export Notes
+      const notes = exportLog.exportNotes ?? ""
+      updates["Export Notes"] = notes.replace(/^Test export — Airtable records not updated\n?/, "").trim()
+    }
+    const updated = await updateExportLog(exportLogId, updates)
 
     return NextResponse.json({ success: true, exportLog: updated })
   } catch (error) {
