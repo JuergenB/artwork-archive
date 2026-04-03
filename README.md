@@ -17,9 +17,9 @@ This system automates the entire journey from submission to enriched archive rec
 
 The result: every submission arrives in Airtable fully enriched and ready for human curatorial review, with AI-generated profiles, validated citations, and classified artwork images.
 
-## What's Next: Export Utility
+## Export Utility (Phase C — Complete)
 
-Phase C is a **Next.js TypeScript web application** for exporting enriched data from Airtable into Artwork Archive-compatible CSV files. It includes a visual field mapping editor, data transformation pipeline, and admin dashboard — all triggered from Airtable's control panel or the web UI. See [Epic #74](https://github.com/JuergenB/artwork-archive/issues/74) for details.
+The **Next.js export utility** transforms enriched Airtable data into Artwork Archive-compatible CSV files (40-column contacts + 69-column pieces, matching AA's April 2026 import template). Includes a visual field mapping viewer, 14 data transforms, AA duplicate detection, and an admin dashboard with export logs. First successful AA import: April 2, 2026. See [Epic #74](https://github.com/JuergenB/artwork-archive/issues/74).
 
 We're also expanding to support **partnership exhibitions** — collaborations with galleries, arts programs, and organizations that bring curated groups of artists. See [Epic #64](https://github.com/JuergenB/artwork-archive/issues/64).
 
@@ -138,7 +138,7 @@ The enrichment pipeline includes several techniques to ensure research accuracy:
 |-------|--------|-------|
 | **A: Foundation** | Complete | Intake pipeline, enrichment pipeline, Airtable schema, documentation |
 | **B: Operations Hub** | Complete | Pipeline Actions + Pipeline Runs tables, progress tracking, admin dashboard |
-| **C: Export Utility** | In Progress | Next.js app: field mapping UI, data transforms, AA CSV generation ([Epic #74](https://github.com/JuergenB/artwork-archive/issues/74)) |
+| **C: Export Utility** | Complete | Next.js app: field mapping UI, data transforms, AA CSV generation. First AA import accepted April 2, 2026. ([Epic #74](https://github.com/JuergenB/artwork-archive/issues/74)) |
 | **D: Future Improvements** | Backlog | Slack integration, analytics, model evaluation, tech debt |
 | **E: Partner Organizations** | Planned | Partner org onboarding, curator tracking, submission linking, export attribution |
 
@@ -165,11 +165,11 @@ artwork-archive/
 │   ├── knowledge/
 │   │   ├── airtable-schema.md         # Complete Airtable schema
 │   │   ├── AA Rolling Submissions Design.md  # System design document
-│   │   └── artwork archive formats/   # AA import templates (.xlsx)
+│   │   └── artwork archive formats/   # AA import templates (.xlsx) — April 2026 + Dec 2025 (superseded)
 │   ├── phases/
 │   │   ├── phase-a-foundation.md      # Complete
 │   │   ├── phase-b-operations-hub.md  # Complete
-│   │   ├── phase-c-export-pipeline.md # In progress (Next.js app)
+│   │   ├── phase-c-export-pipeline.md # Complete (Next.js app)
 │   │   └── phase-d-future-improvements.md  # Backlog
 │   ├── design/                        # Architecture diagrams (future)
 │   └── prompts/                       # AI prompt library (future)
@@ -188,7 +188,7 @@ The `workflows/` directory contains date-coded JSON exports of n8n workflows, se
 
 - **n8n Cloud** instance with API access
 - **Airtable** base with the schema documented in `docs/knowledge/airtable-schema.md`
-- **API credentials** for: OpenAI, Perplexity, Gmail (OAuth2), ActiveCampaign, Airtable (OAuth2)
+- **API credentials** for: OpenAI, Perplexity, Mailgun, ActiveCampaign, Airtable (OAuth2)
 - **Paperform** (or equivalent) configured to POST submissions to the Intake webhook
 
 ## Development
@@ -200,7 +200,7 @@ The `workflows/` directory contains date-coded JSON exports of n8n workflows, se
 ```bash
 cd app
 npm install
-npm run dev        # Start dev server on localhost:3000
+npm run dev        # Start dev server on localhost:3015
 npm run build      # Production build
 npm run lint       # ESLint
 ```
