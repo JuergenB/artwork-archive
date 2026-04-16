@@ -398,6 +398,10 @@ export function ArtworkDetailSheet({
               relevanceHypothesisAi: artwork.relevanceHypothesisAi,
               linkToPurchaseUrl: artwork.linkToPurchaseUrl,
               partnerOrgs: artwork.partnerOrgs ?? [],
+              mediumAi: artwork.mediumAi,
+              subjectMatterAi: artwork.subjectMatterAi,
+              medium: artwork.medium,
+              subjectMatter: artwork.subjectMatter,
             })
             return notes ? (
               <>

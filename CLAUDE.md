@@ -43,6 +43,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 - **Artists (enrichment only, issue #91):** `Pending - Imported` → `Pending - Enriched` → `Needs Review` or `On Hold` (curator flags). Artist status is **never changed by the export pipeline**. Legacy export values (`Approved for Export`, `Exported`, `Accepted`) have been removed from the Airtable single-select field.
 - **Artworks (enrichment + export):** `Pending - Imported` → `Pending - Enriched` (after image classification) → `Approved for Export` → `Exported` → `Accepted`. Artworks inherit artist eligibility via `Status (from Artist)` Lookup field — only artworks whose artist is "Pending - Enriched" are classified.
 - **Export pipeline:** Starts from artworks with status "Approved for Export". Artists are resolved by ID from linked artworks. Guards exclude artists who are `Needs Review`, `On Hold`, or missing `Artist Profile (AI)` — their artworks are excluded with a warning message.
+- **Export CSV field policy (#97):** Medium and Subject Matter columns contain **artist-submitted values only**. AI-enriched values for both fields are written to the Notes column under `MEDIUM (AI)` and `SUBJECT MATTER (AI)` headings (skipped when AI matches artist value). Dimensions (Height/Width/Depth) are AI-extracted from the artist's Description field — treated as artist data, not labeled as AI.
 
 ---
 
