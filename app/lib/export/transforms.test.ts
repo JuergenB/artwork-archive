@@ -13,7 +13,6 @@ import {
   notesBuilder,
   buildArtistNotes,
   buildArtworkNotes,
-  fieldConcatenate,
   collectionsExpand,
   nationalityNormalize,
   applyTransform,
@@ -591,6 +590,10 @@ describe("buildArtworkNotes", () => {
       relevanceHypothesisAi: "Strong connection to exhibition theme",
       linkToPurchaseUrl: "https://shop.example.com/piece1",
       partnerOrgs: [],
+      mediumAi: null,
+      subjectMatterAi: null,
+      medium: null,
+      subjectMatter: null,
     })
     expect(result).toContain("EXHIBITION FIT (AI):")
     expect(result).toContain("PURCHASE LINK:")
@@ -612,6 +615,10 @@ describe("buildArtworkNotes", () => {
         curatorBio: null,
         campaignName: "Arterial - Grad Show",
       }],
+      mediumAi: null,
+      subjectMatterAi: null,
+      medium: null,
+      subjectMatter: null,
     })
     expect(result).toContain("PARTNER ORGANIZATION:")
     expect(result).toContain("Campaign: Arterial - Grad Show")
@@ -624,6 +631,10 @@ describe("buildArtworkNotes", () => {
       relevanceHypothesisAi: "SKIP",
       linkToPurchaseUrl: "https://shop.example.com",
       partnerOrgs: [],
+      mediumAi: null,
+      subjectMatterAi: null,
+      medium: null,
+      subjectMatter: null,
     })
     expect(result).not.toContain("EXHIBITION FIT")
     expect(result).toContain("PURCHASE LINK:")
@@ -634,41 +645,123 @@ describe("buildArtworkNotes", () => {
       relevanceHypothesisAi: "skip",
       linkToPurchaseUrl: null,
       partnerOrgs: [],
+      mediumAi: null,
+      subjectMatterAi: null,
+      medium: null,
+      subjectMatter: null,
     })
     expect(result).toBe("")
   })
 
   it("returns empty when all null", () => {
-    expect(buildArtworkNotes({ relevanceHypothesisAi: null, linkToPurchaseUrl: null, partnerOrg: null })).toBe("")
-  })
-})
-
-// ─── Field Concatenate ──────────────────────────────────────
-
-describe("fieldConcatenate", () => {
-  it("returns empty string when both null", () => {
-    expect(fieldConcatenate(null, null)).toBe("")
-  })
-
-  it("returns artist value when AI is empty", () => {
-    expect(fieldConcatenate("Oil on canvas", null)).toBe("Oil on canvas")
-    expect(fieldConcatenate("Oil on canvas", "")).toBe("Oil on canvas")
+    expect(buildArtworkNotes({
+      relevanceHypothesisAi: null,
+      linkToPurchaseUrl: null,
+      partnerOrgs: null,
+      mediumAi: null,
+      subjectMatterAi: null,
+      medium: null,
+      subjectMatter: null,
+    })).toBe("")
   })
 
-  it("returns AI value when artist is empty", () => {
-    expect(fieldConcatenate(null, "Acrylic")).toBe("Acrylic")
-    expect(fieldConcatenate("", "Acrylic")).toBe("Acrylic")
+  it("includes AI medium when artist did not submit", () => {
+    const result = buildArtworkNotes({
+      relevanceHypothesisAi: null,
+      linkToPurchaseUrl: null,
+      partnerOrgs: [],
+      mediumAi: "Oil paint on stretched canvas",
+      subjectMatterAi: null,
+      medium: null,
+      subjectMatter: null,
+    })
+    expect(result).toContain("MEDIUM (AI):")
+    expect(result).toContain("Oil paint on stretched canvas")
   })
 
-  it("concatenates when both present and different", () => {
-    const result = fieldConcatenate("Oil on canvas", "Oil painting, mixed media")
-    expect(result).toBe("Oil on canvas\n\nAI ANALYSIS: Oil painting, mixed media")
+  it("skips AI medium when it matches artist value (case-insensitive)", () => {
+    const result = buildArtworkNotes({
+      relevanceHypothesisAi: null,
+      linkToPurchaseUrl: null,
+      partnerOrgs: [],
+      mediumAi: "oil on canvas",
+      subjectMatterAi: null,
+      medium: "Oil on canvas",
+      subjectMatter: null,
+    })
+    expect(result).not.toContain("MEDIUM (AI)")
   })
 
-  it("returns artist value only when same (case-insensitive)", () => {
-    expect(fieldConcatenate("Oil on canvas", "oil on canvas")).toBe(
-      "Oil on canvas",
-    )
+  it("includes AI medium when different from artist value", () => {
+    const result = buildArtworkNotes({
+      relevanceHypothesisAi: null,
+      linkToPurchaseUrl: null,
+      partnerOrgs: [],
+      mediumAi: "Oil paint on stretched canvas",
+      subjectMatterAi: null,
+      medium: "Oil on canvas",
+      subjectMatter: null,
+    })
+    expect(result).toContain("MEDIUM (AI):")
+    expect(result).toContain("Oil paint on stretched canvas")
+  })
+
+  it("includes AI subject matter when artist did not submit", () => {
+    const result = buildArtworkNotes({
+      relevanceHypothesisAi: null,
+      linkToPurchaseUrl: null,
+      partnerOrgs: [],
+      mediumAi: null,
+      subjectMatterAi: "Mountain landscape at sunset",
+      medium: null,
+      subjectMatter: null,
+    })
+    expect(result).toContain("SUBJECT MATTER (AI):")
+    expect(result).toContain("Mountain landscape at sunset")
+  })
+
+  it("skips AI subject matter when it matches artist value (case-insensitive)", () => {
+    const result = buildArtworkNotes({
+      relevanceHypothesisAi: null,
+      linkToPurchaseUrl: null,
+      partnerOrgs: [],
+      mediumAi: null,
+      subjectMatterAi: "landscape",
+      medium: null,
+      subjectMatter: "Landscape",
+    })
+    expect(result).not.toContain("SUBJECT MATTER (AI)")
+  })
+
+  it("includes AI subject matter when different from artist value", () => {
+    const result = buildArtworkNotes({
+      relevanceHypothesisAi: null,
+      linkToPurchaseUrl: null,
+      partnerOrgs: [],
+      mediumAi: null,
+      subjectMatterAi: "Mountain landscape at sunset with warm tones",
+      medium: null,
+      subjectMatter: "Landscape",
+    })
+    expect(result).toContain("SUBJECT MATTER (AI):")
+    expect(result).toContain("Mountain landscape at sunset with warm tones")
+  })
+
+  it("includes both AI medium and subject matter sections together", () => {
+    const result = buildArtworkNotes({
+      relevanceHypothesisAi: "Connects to theme",
+      linkToPurchaseUrl: null,
+      partnerOrgs: [],
+      mediumAi: "Acrylic on wood panel",
+      subjectMatterAi: "Abstract geometric composition",
+      medium: "Acrylic",
+      subjectMatter: "Abstract",
+    })
+    expect(result).toContain("MEDIUM (AI):")
+    expect(result).toContain("Acrylic on wood panel")
+    expect(result).toContain("SUBJECT MATTER (AI):")
+    expect(result).toContain("Abstract geometric composition")
+    expect(result).toContain("EXHIBITION FIT (AI):")
   })
 })
 
@@ -774,7 +867,6 @@ describe("applyTransform", () => {
 
   it("passes through for context-dependent transforms", () => {
     expect(applyTransform("notes_builder", "raw")).toBe("raw")
-    expect(applyTransform("field_concatenate", "raw")).toBe("raw")
     expect(applyTransform("collections_expand", "raw")).toBe("raw")
   })
 

@@ -17,7 +17,6 @@ import {
   pipeSeparate,
   dimensionFormat,
   dateFormat,
-  fieldConcatenate,
   buildArtistNotes,
   buildArtworkNotes,
 } from "./transforms"
@@ -129,7 +128,7 @@ export function buildArtistCsvRow(artist: EnrichedArtist): string[] {
 
 /**
  * Map an enriched artwork to a 69-element array matching AA artwork template.
- * Applies all transforms (field_concatenate, ai_tags, collections_expand,
+ * Applies all transforms (ai_tags, collections_expand,
  * dimension_format, date_format, pipe_separate, notes_builder).
  * Updated 2026-04-02 to match April 2026 AA template (mid-January revision).
  */
@@ -143,8 +142,8 @@ export function buildArtworkCsvRow(artwork: EnrichedArtwork): string[] {
   // Col 2: Artist Last Name (resolved from linked artist)
   row[2] = artwork.artistLastName
   // Col 3: Inventory Number (not mapped — empty)
-  // Col 4: Medium (field_concatenate: artist-submitted + AI)
-  row[4] = fieldConcatenate(artwork.medium, artwork.mediumAi)
+  // Col 4: Medium (artist-submitted only; AI value moved to Notes)
+  row[4] = artwork.medium?.trim() ?? ""
   // Col 5: Type
   row[5] = artwork.type ?? ""
   // Col 6: Status (not mapped — leave empty, AA manages their own status)
@@ -155,8 +154,8 @@ export function buildArtworkCsvRow(artwork: EnrichedArtwork): string[] {
   // Col 9: Depth
   row[9] = dimensionFormat(artwork.depthAi, artwork.dimensionsUnitAi)
   // Cols 10-16: Dimension Override, Paper, Framed (not mapped — empty)
-  // Col 17: Subject Matter (field_concatenate: artist-submitted + AI)
-  row[17] = fieldConcatenate(artwork.subjectMatter, artwork.subjectMatterAi)
+  // Col 17: Subject Matter (artist-submitted only; AI value moved to Notes)
+  row[17] = artwork.subjectMatter?.trim() ?? ""
   // Cols 18-21: Price, FMV, Wholesale, Insurance (not mapped — empty)
   // Col 22: Creation Date
   row[22] = dateFormat(artwork.yearCreatedDate)
@@ -165,11 +164,15 @@ export function buildArtworkCsvRow(artwork: EnrichedArtwork): string[] {
   row[25] = artwork.description ?? ""
   // Col 26: Tags
   row[26] = aiTags(artwork.tagsAi)
-  // Col 27: Notes (notes_builder: Exhibition Fit + Partner Org + Purchase Link)
+  // Col 27: Notes (notes_builder: AI enrichment + Exhibition Fit + Partner Org + Purchase Link)
   row[27] = buildArtworkNotes({
     relevanceHypothesisAi: artwork.relevanceHypothesisAi,
     linkToPurchaseUrl: artwork.linkToPurchaseUrl,
     partnerOrgs: artwork.partnerOrgs,
+    mediumAi: artwork.mediumAi,
+    subjectMatterAi: artwork.subjectMatterAi,
+    medium: artwork.medium,
+    subjectMatter: artwork.subjectMatter,
   })
   // Col 28: Collections (already resolved in enrichment)
   row[28] = artwork.collections

@@ -146,7 +146,6 @@ export type TransformType =
   | "strip_markdown"
   | "ai_tags"
   | "notes_builder"
-  | "field_concatenate"
   | "collections_expand"
   | "nationality_normalize"
 

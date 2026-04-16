@@ -212,23 +212,30 @@ describe("buildArtworkCsvRow", () => {
     expect(row[2]).toBe("Doe") // Artist Last Name
   })
 
-  it("applies field_concatenate to Medium", () => {
+  it("outputs artist-submitted medium only (AI value moved to Notes)", () => {
     const row = buildArtworkCsvRow(makeArtwork({
       medium: "Oil on canvas",
       mediumAi: "Oil paint on stretched canvas",
     }))
-    expect(row[4]).toContain("Oil on canvas")
-    expect(row[4]).toContain("AI ANALYSIS:")
-    expect(row[4]).toContain("Oil paint on stretched canvas")
+    expect(row[4]).toBe("Oil on canvas")
+    expect(row[4]).not.toContain("AI ANALYSIS")
   })
 
-  it("skips AI ANALYSIS when medium values are identical", () => {
+  it("outputs empty medium when artist did not submit", () => {
     const row = buildArtworkCsvRow(makeArtwork({
-      medium: "Watercolor",
-      mediumAi: "watercolor",
+      medium: null,
+      mediumAi: "Acrylic",
     }))
-    expect(row[4]).toBe("Watercolor")
-    expect(row[4]).not.toContain("AI ANALYSIS")
+    expect(row[4]).toBe("")
+  })
+
+  it("outputs artist-submitted subject matter only (AI value moved to Notes)", () => {
+    const row = buildArtworkCsvRow(makeArtwork({
+      subjectMatter: "Landscape",
+      subjectMatterAi: "Mountain landscape at sunset",
+    }))
+    expect(row[17]).toBe("Landscape")
+    expect(row[17]).not.toContain("AI ANALYSIS")
   })
 
   it("applies dimension_format", () => {
@@ -260,17 +267,29 @@ describe("buildArtworkCsvRow", () => {
     expect(row[26]).toBe("landscape, mountains, oil painting, sunset")
   })
 
-  it("builds Notes from relevance hypothesis and purchase link", () => {
+  it("builds Notes with AI enrichment, relevance hypothesis, and purchase link", () => {
     const row = buildArtworkCsvRow(makeArtwork())
+    expect(row[27]).toContain("MEDIUM (AI):")
+    expect(row[27]).toContain("SUBJECT MATTER (AI):")
     expect(row[27]).toContain("EXHIBITION FIT (AI)")
     expect(row[27]).toContain("PURCHASE LINK")
     expect(row[27]).toContain("https://shop.example.com/sunset")
+  })
+
+  it("skips AI medium in Notes when it matches artist value", () => {
+    const row = buildArtworkCsvRow(makeArtwork({
+      medium: "Oil on canvas",
+      mediumAi: "oil on canvas",
+    }))
+    expect(row[27]).not.toContain("MEDIUM (AI)")
   })
 
   it("skips SKIP relevance hypothesis in Notes", () => {
     const row = buildArtworkCsvRow(makeArtwork({
       relevanceHypothesisAi: "SKIP",
       linkToPurchaseUrl: null,
+      mediumAi: null,
+      subjectMatterAi: null,
     }))
     expect(row[27]).toBe("")
   })

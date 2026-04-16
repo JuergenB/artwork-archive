@@ -439,44 +439,42 @@ export interface ArtworkNotesContext {
   relevanceHypothesisAi: string | null | undefined
   linkToPurchaseUrl: string | null | undefined
   partnerOrgs: PartnerOrgContext[] | null | undefined
+  mediumAi: string | null | undefined
+  subjectMatterAi: string | null | undefined
+  medium: string | null | undefined
+  subjectMatter: string | null | undefined
 }
 
 export function buildArtworkNotes(ctx: ArtworkNotesContext): string {
-  // Only include relevance hypothesis if not "SKIP"
   const relevance =
     ctx.relevanceHypothesisAi?.trim() &&
     ctx.relevanceHypothesisAi.trim().toUpperCase() !== "SKIP"
       ? ctx.relevanceHypothesisAi
       : null
 
+  // Dedup: skip AI section when it matches artist-submitted value
+  const mediumAi = shouldIncludeAi(ctx.medium, ctx.mediumAi) ? ctx.mediumAi : null
+  const subjectMatterAi = shouldIncludeAi(ctx.subjectMatter, ctx.subjectMatterAi) ? ctx.subjectMatterAi : null
+
   return notesBuilder([
+    { heading: "MEDIUM (AI)", content: mediumAi },
+    { heading: "SUBJECT MATTER (AI)", content: subjectMatterAi },
     { heading: "EXHIBITION FIT (AI)", content: relevance },
     { heading: "PURCHASE LINK", content: ctx.linkToPurchaseUrl },
     { heading: "PARTNER ORGANIZATION", content: formatPartnerOrgs(ctx.partnerOrgs) },
   ])
 }
 
-// ─── Field Concatenate ──────────────────────────────────────
-
-/**
- * Concatenate artist-submitted + AI analysis values.
- * AI value appended below with "AI ANALYSIS:" prefix, only if different.
- */
-export function fieldConcatenate(
+/** Return true if AI value should be included (non-empty and different from artist value) */
+function shouldIncludeAi(
   artistValue: string | null | undefined,
   aiValue: string | null | undefined,
-): string {
-  const artist = artistValue?.trim() ?? ""
-  const ai = aiValue?.trim() ?? ""
-
-  if (!artist && !ai) return ""
-  if (!ai) return artist
-  if (!artist) return ai
-
-  // Only append AI if different from artist value
-  if (artist.toLowerCase() === ai.toLowerCase()) return artist
-
-  return `${artist}\n\nAI ANALYSIS: ${ai}`
+): boolean {
+  const ai = aiValue?.trim()
+  if (!ai) return false
+  const artist = artistValue?.trim()
+  if (!artist) return true // AI value exists but artist didn't submit — include it
+  return ai.toLowerCase() !== artist.toLowerCase()
 }
 
 // ─── Collections Expand ─────────────────────────────────────
@@ -571,7 +569,7 @@ import type { TransformType } from "../types"
 
 /**
  * Apply a named transform to a value.
- * For transforms that need context (notes_builder, field_concatenate,
+ * For transforms that need context (notes_builder,
  * collections_expand), use the specific functions directly.
  */
 export function applyTransform(
@@ -606,7 +604,6 @@ export function applyTransform(
       return nationalityNormalize(value)
     // These require structured context — use specific functions directly
     case "notes_builder":
-    case "field_concatenate":
     case "collections_expand":
       return value ?? ""
     default:
