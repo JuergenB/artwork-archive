@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
     const campaignId: string | undefined = body.campaignId
     const triggeredBy: string = body.triggeredBy ?? "Unknown"
     const testMode: boolean = body.testMode === true
+    const excludeDimensions: boolean = body.excludeDimensions !== false
 
     // 1. Fetch approved artworks + reference data in parallel
     const [rawArtworks, allCampaigns, allPartnerOrgs] = await Promise.all([
@@ -189,7 +190,9 @@ export async function POST(request: NextRequest) {
 
     // 6. Generate CSVs
     const artistCsv = generateArtistCsv(enrichedArtists)
-    const artworkCsv = generateArtworkCsv(enrichedArtworks)
+    const artworkCsv = generateArtworkCsv(enrichedArtworks, {
+      dimensionsInNotes: excludeDimensions,
+    })
 
     // 7. Upload to Vercel Blob
     const { artistFileName, artworkFileName } = generateExportFileNames(campaignName)

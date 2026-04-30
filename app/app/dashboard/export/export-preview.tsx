@@ -49,6 +49,7 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
   const [selectedArtist, setSelectedArtist] = useState<ArtistWithArtworks | null>(null)
   const [selectedArtwork, setSelectedArtwork] = useState<{ artwork: ExportPreviewArtwork; artistName: string | null } | null>(null)
   const [testMode, setTestMode] = useState(true)
+  const [excludeDimensions, setExcludeDimensions] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [copied, setCopied] = useState<"subject" | "body" | "to" | null>(null)
@@ -125,6 +126,7 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
           campaignId: selectedCampaign,
           triggeredBy: testMode ? "Test Export" : "Export UI",
           testMode,
+          excludeDimensions,
         }),
       })
       if (!res.ok) {
@@ -393,6 +395,20 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
                     <span className="font-medium">Test mode</span>
                     <span className="text-muted-foreground">— generate CSVs without updating Airtable records</span>
                   </label>
+                  <label className="flex items-start gap-2 text-sm cursor-pointer max-w-2xl">
+                    <input
+                      type="checkbox"
+                      checked={excludeDimensions}
+                      onChange={(e) => setExcludeDimensions(e.target.checked)}
+                      className="rounded mt-0.5"
+                    />
+                    <span>
+                      <span className="font-medium">Exclude dimensions from CSV</span>
+                      <span className="text-muted-foreground">
+                        {" "}— Height, Width, and Depth columns will be left blank in the CSV. Values are added to each artwork&apos;s Notes section instead, so they don&apos;t appear in published exhibitions but stay visible for manual review during AA import. Temporary accommodation while artist submissions are inconsistent.
+                      </span>
+                    </span>
+                  </label>
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
                       Generate Artwork Archive CSV files for{" "}
@@ -560,6 +576,7 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
         artistName={selectedArtwork?.artistName}
         open={!!selectedArtwork}
         onOpenChange={(open) => { if (!open) setSelectedArtwork(null) }}
+        excludeDimensions={excludeDimensions}
       />
     </div>
   )

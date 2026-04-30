@@ -10,7 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import type { EnrichedArtist, EnrichedArtwork } from "@/lib/export/enrichment"
-import { buildArtistNotes, buildArtworkNotes } from "@/lib/export/transforms"
+import { buildArtistNotes, buildArtworkNotes, dimensionFormat } from "@/lib/export/transforms"
 
 // ─── Field Display Helper ────────────────────────────────
 
@@ -290,11 +290,13 @@ export function ArtworkDetailSheet({
   artistName,
   open,
   onOpenChange,
+  excludeDimensions = false,
 }: {
   artwork: EnrichedArtwork | null
   artistName?: string | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  excludeDimensions?: boolean
 }) {
   if (!artwork) return null
 
@@ -394,6 +396,13 @@ export function ArtworkDetailSheet({
 
           {/* Notes preview last */}
           {(() => {
+            const notesDims = excludeDimensions
+              ? {
+                  height: dimensionFormat(artwork.heightAi, artwork.dimensionsUnitAi),
+                  width: dimensionFormat(artwork.widthAi, artwork.dimensionsUnitAi),
+                  depth: dimensionFormat(artwork.depthAi, artwork.dimensionsUnitAi),
+                }
+              : null
             const notes = buildArtworkNotes({
               relevanceHypothesisAi: artwork.relevanceHypothesisAi,
               linkToPurchaseUrl: artwork.linkToPurchaseUrl,
@@ -402,12 +411,13 @@ export function ArtworkDetailSheet({
               subjectMatterAi: artwork.subjectMatterAi,
               medium: artwork.medium,
               subjectMatter: artwork.subjectMatter,
+              dimensions: notesDims,
             })
             return notes ? (
               <>
                 <SectionHeading>Notes Preview (Export)</SectionHeading>
                 <div className="py-3">
-                  <dd className="text-sm whitespace-pre-line leading-relaxed bg-muted/50 rounded-lg p-3 max-h-48 overflow-y-auto font-mono text-xs">
+                  <dd className="text-sm whitespace-pre-line leading-relaxed bg-muted/50 rounded-lg p-3 max-h-96 overflow-y-auto font-mono text-xs">
                     {notes}
                   </dd>
                 </div>

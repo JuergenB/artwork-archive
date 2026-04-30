@@ -126,14 +126,30 @@ export function buildArtistCsvRow(artist: EnrichedArtist): string[] {
 
 // ─── Artwork CSV Row Builder ────────────────────────────
 
+export interface ArtworkRowOptions {
+  /**
+   * When true, leave the Height/Width/Depth columns blank and route the
+   * formatted (inches) values into the Notes column under a DIMENSIONS heading.
+   * Temporary curator accommodation — see issue #99.
+   */
+  dimensionsInNotes?: boolean
+}
+
 /**
  * Map an enriched artwork to a 69-element array matching AA artwork template.
  * Applies all transforms (ai_tags, collections_expand,
  * dimension_format, date_format, pipe_separate, notes_builder).
  * Updated 2026-04-02 to match April 2026 AA template (mid-January revision).
  */
-export function buildArtworkCsvRow(artwork: EnrichedArtwork): string[] {
+export function buildArtworkCsvRow(
+  artwork: EnrichedArtwork,
+  options: ArtworkRowOptions = {},
+): string[] {
   const row = new Array<string>(AA_ARTWORK_COLUMNS.length).fill("")
+
+  const formattedHeight = dimensionFormat(artwork.heightAi, artwork.dimensionsUnitAi)
+  const formattedWidth = dimensionFormat(artwork.widthAi, artwork.dimensionsUnitAi)
+  const formattedDepth = dimensionFormat(artwork.depthAi, artwork.dimensionsUnitAi)
 
   // Col 0: Piece Name
   row[0] = artwork.pieceName ?? ""
@@ -147,12 +163,12 @@ export function buildArtworkCsvRow(artwork: EnrichedArtwork): string[] {
   // Col 5: Type
   row[5] = artwork.type ?? ""
   // Col 6: Status (not mapped — leave empty, AA manages their own status)
-  // Col 7: Height
-  row[7] = dimensionFormat(artwork.heightAi, artwork.dimensionsUnitAi)
-  // Col 8: Width
-  row[8] = dimensionFormat(artwork.widthAi, artwork.dimensionsUnitAi)
-  // Col 9: Depth
-  row[9] = dimensionFormat(artwork.depthAi, artwork.dimensionsUnitAi)
+  // Cols 7-9: Height, Width, Depth — suppressed when dimensionsInNotes is on
+  if (!options.dimensionsInNotes) {
+    row[7] = formattedHeight
+    row[8] = formattedWidth
+    row[9] = formattedDepth
+  }
   // Cols 10-16: Dimension Override, Paper, Framed (not mapped — empty)
   // Col 17: Subject Matter (artist-submitted only; AI value moved to Notes)
   row[17] = artwork.subjectMatter?.trim() ?? ""
@@ -173,6 +189,9 @@ export function buildArtworkCsvRow(artwork: EnrichedArtwork): string[] {
     subjectMatterAi: artwork.subjectMatterAi,
     medium: artwork.medium,
     subjectMatter: artwork.subjectMatter,
+    dimensions: options.dimensionsInNotes
+      ? { height: formattedHeight, width: formattedWidth, depth: formattedDepth }
+      : null,
   })
   // Col 28: Collections (already resolved in enrichment)
   row[28] = artwork.collections
@@ -220,10 +239,13 @@ export function generateArtistCsv(artists: EnrichedArtist[]): string {
  * Generate the artwork CSV for AA import.
  * Row 1: column headers, Row 2: gray helper text, Row 3+: data.
  */
-export function generateArtworkCsv(artworks: EnrichedArtwork[]): string {
+export function generateArtworkCsv(
+  artworks: EnrichedArtwork[],
+  options: ArtworkRowOptions = {},
+): string {
   const headers = AA_ARTWORK_COLUMNS.map((col) => col.name)
   const helperRow = AA_ARTWORK_COLUMNS.map((col) => col.helperText)
-  const rows = artworks.map(buildArtworkCsvRow)
+  const rows = artworks.map((aw) => buildArtworkCsvRow(aw, options))
   return generateCsv(headers, rows, helperRow)
 }
 

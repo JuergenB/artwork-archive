@@ -443,6 +443,27 @@ export interface ArtworkNotesContext {
   subjectMatterAi: string | null | undefined
   medium: string | null | undefined
   subjectMatter: string | null | undefined
+  /** When set, render a DIMENSIONS section at the top of Notes. Values come pre-formatted (already converted to inches via dimensionFormat). */
+  dimensions?: {
+    height: string
+    width: string
+    depth: string
+  } | null
+}
+
+/**
+ * Format pre-converted (inches) dimension strings as a three-line block.
+ * Each non-empty value renders as "Label: <n> in". Returns null if all blank.
+ */
+function buildDimensionsBlock(
+  dims: ArtworkNotesContext["dimensions"],
+): string | null {
+  if (!dims) return null
+  const lines: string[] = []
+  if (dims.height) lines.push(`Height: ${dims.height} in`)
+  if (dims.width) lines.push(`Width: ${dims.width} in`)
+  if (dims.depth) lines.push(`Depth: ${dims.depth} in`)
+  return lines.length > 0 ? lines.join("\n") : null
 }
 
 export function buildArtworkNotes(ctx: ArtworkNotesContext): string {
@@ -457,6 +478,7 @@ export function buildArtworkNotes(ctx: ArtworkNotesContext): string {
   const subjectMatterAi = shouldIncludeAi(ctx.subjectMatter, ctx.subjectMatterAi) ? ctx.subjectMatterAi : null
 
   return notesBuilder([
+    { heading: "DIMENSIONS", content: buildDimensionsBlock(ctx.dimensions) },
     { heading: "MEDIUM (AI)", content: mediumAi },
     { heading: "SUBJECT MATTER (AI)", content: subjectMatterAi },
     { heading: "EXHIBITION FIT (AI)", content: relevance },

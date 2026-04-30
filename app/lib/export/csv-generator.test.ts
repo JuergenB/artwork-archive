@@ -315,6 +315,80 @@ describe("buildArtworkCsvRow", () => {
     const row2 = buildArtworkCsvRow(makeArtwork({ yearCreatedDate: "2024-03-15" }))
     expect(row2[22]).toBe("03/15/2024")
   })
+
+  // ─── dimensionsInNotes toggle (#99) ────────────────────
+
+  it("dimensionsInNotes=true: leaves H/W/D columns blank and adds DIMENSIONS to Notes", () => {
+    const row = buildArtworkCsvRow(
+      makeArtwork({ heightAi: 24, widthAi: 36, depthAi: 2, dimensionsUnitAi: "inches" }),
+      { dimensionsInNotes: true },
+    )
+    expect(row[7]).toBe("")
+    expect(row[8]).toBe("")
+    expect(row[9]).toBe("")
+    expect(row[27]).toContain("DIMENSIONS:")
+    expect(row[27]).toContain("Height: 24 in")
+    expect(row[27]).toContain("Width: 36 in")
+    expect(row[27]).toContain("Depth: 2 in")
+  })
+
+  it("dimensionsInNotes=true: places DIMENSIONS at top of Notes (before MEDIUM (AI))", () => {
+    const row = buildArtworkCsvRow(
+      makeArtwork({
+        heightAi: 24,
+        widthAi: 36,
+        medium: "Watercolor",
+        mediumAi: "Watercolor on paper",
+      }),
+      { dimensionsInNotes: true },
+    )
+    const notes = row[27]
+    const dimIdx = notes.indexOf("DIMENSIONS:")
+    const medIdx = notes.indexOf("MEDIUM (AI):")
+    expect(dimIdx).toBeGreaterThanOrEqual(0)
+    expect(medIdx).toBeGreaterThan(dimIdx)
+  })
+
+  it("dimensionsInNotes=true: converts cm to inches in Notes", () => {
+    const row = buildArtworkCsvRow(
+      makeArtwork({ heightAi: 25.4, widthAi: 50.8, depthAi: null, dimensionsUnitAi: "cm" }),
+      { dimensionsInNotes: true },
+    )
+    expect(row[27]).toContain("Height: 10 in") // 25.4 / 2.54
+    expect(row[27]).toContain("Width: 20 in") // 50.8 / 2.54
+    expect(row[27]).not.toContain("Depth:")
+  })
+
+  it("dimensionsInNotes=true: omits lines for null/zero values", () => {
+    const row = buildArtworkCsvRow(
+      makeArtwork({ heightAi: 24, widthAi: null, depthAi: 0 }),
+      { dimensionsInNotes: true },
+    )
+    expect(row[27]).toContain("Height: 24 in")
+    expect(row[27]).not.toContain("Width:")
+    expect(row[27]).not.toContain("Depth:")
+  })
+
+  it("dimensionsInNotes=true: suppresses DIMENSIONS section entirely when all values blank", () => {
+    const row = buildArtworkCsvRow(
+      makeArtwork({ heightAi: null, widthAi: null, depthAi: null }),
+      { dimensionsInNotes: true },
+    )
+    expect(row[27]).not.toContain("DIMENSIONS")
+    expect(row[7]).toBe("")
+    expect(row[8]).toBe("")
+    expect(row[9]).toBe("")
+  })
+
+  it("dimensionsInNotes=false (default): keeps current behavior (H/W/D in columns, no DIMENSIONS section)", () => {
+    const row = buildArtworkCsvRow(
+      makeArtwork({ heightAi: 24, widthAi: 36, depthAi: 2 }),
+    )
+    expect(row[7]).toBe("24")
+    expect(row[8]).toBe("36")
+    expect(row[9]).toBe("2")
+    expect(row[27]).not.toContain("DIMENSIONS")
+  })
 })
 
 // ─── generateCsv ────────────────────────────────────────
