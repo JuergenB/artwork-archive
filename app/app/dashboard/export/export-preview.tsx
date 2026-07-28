@@ -32,15 +32,75 @@ import type { ExportPreviewData, ExportPreviewArtist, ExportPreviewArtwork } fro
 import { ArtistDetailSheet, ArtworkDetailSheet } from "./record-detail-sheet"
 import { ImageWithFallback } from "@/components/image-with-fallback"
 
+export interface TemplateSummaryView {
+  entityType: "artist" | "artwork"
+  fileName: string
+  repoPath: string
+  revisionLabel: string
+  revisedOn: string | null
+  columnCount: number
+  sha256Short: string
+}
+
+interface AuditFailureView {
+  recordLabel: string
+  entityType: "artist" | "artwork"
+  status: string
+  detail: string | null
+}
+
+interface ExportBlock {
+  summary: string
+  totalImages: number
+  failureCount: number
+  failures: AuditFailureView[]
+}
+
 interface ExportPreviewProps {
   campaigns: Campaign[]
+  templates: TemplateSummaryView[]
 }
 
 interface ArtistWithArtworks extends ExportPreviewArtist {
   relatedArtworks: ExportPreviewArtwork[]
 }
 
-export function ExportPreview({ campaigns }: ExportPreviewProps) {
+/**
+ * Shows exactly which Artwork Archive templates this export is built from —
+ * file name, AA's own revision date, column count and where the file lives in
+ * the repo. If AA sends a revised template, this is where the mismatch shows.
+ */
+function TemplateProvenance({ templates }: { templates: TemplateSummaryView[] }) {
+  if (templates.length === 0) return null
+
+  return (
+    <div className="rounded-md border bg-muted/40 p-3">
+      <div className="mb-2 flex items-center gap-2">
+        <Info className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Built from Artwork Archive templates</span>
+      </div>
+      <ul className="space-y-1.5">
+        {templates.map((tpl) => (
+          <li key={tpl.entityType} className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">
+              {tpl.entityType === "artist" ? "Contacts" : "Pieces"}:
+            </span>{" "}
+            <span className="font-mono">{tpl.fileName}</span>
+            <br />
+            <span className="pl-2">
+              {tpl.revisionLabel} · revised by AA {tpl.revisedOn ?? "unknown"} · {tpl.columnCount} columns ·
+              sha256 {tpl.sha256Short}
+            </span>
+            <br />
+            <span className="pl-2 font-mono opacity-70">{tpl.repoPath}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+export function ExportPreview({ campaigns, templates }: ExportPreviewProps) {
   const [selectedCampaign, setSelectedCampaign] = useState<string>("all")
   const [previewData, setPreviewData] = useState<ExportPreviewData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -53,9 +113,12 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
   const [exporting, setExporting] = useState(false)
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [copied, setCopied] = useState<"subject" | "body" | "to" | null>(null)
+  const [exportBlock, setExportBlock] = useState<ExportBlock | null>(null)
   const [exportResult, setExportResult] = useState<{
     artistCsvUrl: string
     artworkCsvUrl: string
+    artistXlsxUrl: string
+    artworkXlsxUrl: string
     artistCount: number
     artworkCount: number
     campaignName: string
@@ -63,6 +126,8 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
     emailBody: string
     exportLogId: string
     enrichmentWarning?: string | null
+    vocabularyWarning?: string | null
+    audit?: { totalImages: number; summary: string; expiresAt: string | null }
   } | null>(null)
 
   // Load "All Campaigns" on mount
@@ -118,6 +183,7 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
 
     setExporting(true)
     setExportResult(null)
+    setExportBlock(null)
     try {
       const res = await fetch("/api/export/generate", {
         method: "POST",
@@ -131,6 +197,17 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
       })
       if (!res.ok) {
         const data = await res.json()
+        // 409 = image audit blocked the export. No files were written and no
+        // Airtable statuses changed, so this is safe to retry.
+        if (res.status === 409 && data.audit) {
+          setExportBlock({
+            summary: data.audit.summary,
+            totalImages: data.audit.totalImages,
+            failureCount: data.audit.failureCount,
+            failures: data.audit.failures ?? [],
+          })
+          return
+        }
         throw new Error(data.error ?? "Export failed")
       }
       const result = await res.json()
@@ -409,9 +486,39 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
                       </span>
                     </span>
                   </label>
+                  <TemplateProvenance templates={templates} />
+
+                  {exportBlock && (
+                    <div className="rounded-md border border-red-300 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
+                        <div className="space-y-2">
+                          <p className="font-medium text-red-800 dark:text-red-300">
+                            Export blocked — {exportBlock.failureCount} of {exportBlock.totalImages} image
+                            {exportBlock.totalImages === 1 ? "" : "s"} would arrive at Artwork Archive already expired
+                          </p>
+                          <p className="text-sm text-red-700 dark:text-red-400">
+                            No files were generated and no Airtable records were changed. Fix the records below,
+                            then run the export again.
+                          </p>
+                          <ul className="space-y-1 text-sm text-red-700 dark:text-red-400">
+                            {exportBlock.failures.map((failure, i) => (
+                              <li key={`${failure.recordLabel}-${i}`}>
+                                <span className="font-medium">{failure.recordLabel}</span>{" "}
+                                <span className="text-red-600/80 dark:text-red-400/70">({failure.entityType})</span>
+                                {" — "}
+                                {failure.detail ?? failure.status}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                      Generate Artwork Archive CSV files for{" "}
+                      Generate Artwork Archive Excel + CSV files for{" "}
                       <span className="font-medium text-foreground">
                         {previewData.totalArtists} {previewData.totalArtists === 1 ? "artist" : "artists"}
                       </span>{" "}
@@ -435,7 +542,7 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
                       ) : (
                         <>
                           <Download className="h-4 w-4" />
-                          Export CSVs
+                          Export Files
                         </>
                       )}
                     </Button>
@@ -462,24 +569,55 @@ export function ExportPreview({ campaigns }: ExportPreviewProps) {
                       </div>
                     )}
 
-                    <div className="flex gap-3">
+                    {exportResult.vocabularyWarning && (
+                      <div className="flex items-start gap-2 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-md p-3">
+                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span className="text-sm whitespace-pre-line">{exportResult.vocabularyWarning}</span>
+                      </div>
+                    )}
+
+                    {exportResult.audit && (
+                      <div className="flex items-start gap-2 rounded-md bg-green-50 p-3 text-green-800 dark:bg-green-950/30 dark:text-green-300">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0" />
+                        <div className="text-sm">
+                          <p className="font-medium">Image links verified</p>
+                          <p>{exportResult.audit.summary}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-3">
+                      <a href={exportResult.artistXlsxUrl} target="_blank" rel="noopener noreferrer">
+                        <Button variant="default" className="gap-2">
+                          <Download className="h-4 w-4" />
+                          Artists (Excel)
+                        </Button>
+                      </a>
+                      <a href={exportResult.artworkXlsxUrl} target="_blank" rel="noopener noreferrer">
+                        <Button variant="default" className="gap-2">
+                          <Download className="h-4 w-4" />
+                          Artworks (Excel)
+                        </Button>
+                      </a>
                       <a href={exportResult.artistCsvUrl} target="_blank" rel="noopener noreferrer">
                         <Button variant="outline" className="gap-2">
                           <ExternalLink className="h-4 w-4" />
-                          Download Artists CSV
+                          Artists (CSV)
                         </Button>
                       </a>
                       <a href={exportResult.artworkCsvUrl} target="_blank" rel="noopener noreferrer">
                         <Button variant="outline" className="gap-2">
                           <ExternalLink className="h-4 w-4" />
-                          Download Artworks CSV
+                          Artworks (CSV)
                         </Button>
                       </a>
                     </div>
 
+                    <TemplateProvenance templates={templates} />
+
                     <div className="border-t pt-4">
                       <p className="text-sm text-muted-foreground mb-2">
-                        Send the CSV links to the Artwork Archive team:
+                        Send the file links to the Artwork Archive team:
                       </p>
                       <div className="flex gap-2">
                         <Button

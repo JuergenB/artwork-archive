@@ -4,7 +4,7 @@
  * applies all transforms, and generates valid CSV strings.
  */
 
-import { AA_ARTIST_COLUMNS, AA_ARTWORK_COLUMNS } from "@/lib/aa-columns"
+import { AA_ARTIST_COLUMNS, AA_ARTWORK_COLUMNS, AA_ARTWORK_TYPES } from "@/lib/aa-columns"
 import type { EnrichedArtist, EnrichedArtwork } from "./enrichment"
 import {
   titleCase,
@@ -19,6 +19,7 @@ import {
   dateFormat,
   buildArtistNotes,
   buildArtworkNotes,
+  aaEnumNormalize,
 } from "./transforms"
 
 // ─── CSV Escaping ───────────────────────────────────────
@@ -160,8 +161,9 @@ export function buildArtworkCsvRow(
   // Col 3: Inventory Number (not mapped — empty)
   // Col 4: Medium (artist-submitted only; AI value moved to Notes)
   row[4] = artwork.medium?.trim() ?? ""
-  // Col 5: Type
-  row[5] = artwork.type ?? ""
+  // Col 5: Type — snapped onto AA's controlled vocabulary (e.g. the Airtable
+  // free-text value "FilmVideo" becomes AA's "Film/Video")
+  row[5] = aaEnumNormalize(artwork.type, AA_ARTWORK_TYPES)
   // Col 6: Status (not mapped — leave empty, AA manages their own status)
   // Cols 7-9: Height, Width, Depth — suppressed when dimensionsInNotes is on
   if (!options.dimensionsInNotes) {
@@ -262,11 +264,15 @@ function slugify(name: string): string {
 export function generateExportFileNames(campaignName: string): {
   artistFileName: string
   artworkFileName: string
+  artistXlsxFileName: string
+  artworkXlsxFileName: string
 } {
   const date = new Date().toISOString().split("T")[0]
   const slug = campaignName === "All Campaigns" ? "All" : slugify(campaignName)
   return {
     artistFileName: `AA-Artists-${slug}-${date}.csv`,
     artworkFileName: `AA-Artworks-${slug}-${date}.csv`,
+    artistXlsxFileName: `AA-Artists-${slug}-${date}.xlsx`,
+    artworkXlsxFileName: `AA-Artworks-${slug}-${date}.xlsx`,
   }
 }

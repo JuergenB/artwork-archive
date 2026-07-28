@@ -33,6 +33,8 @@ export type ExportStatus =
   | "Accepted"
   | "Rejected"
   | "Failed"
+  /** Image URL audit refused the export — no files written, no statuses changed. */
+  | "Blocked"
 
 export type UserRole = "admin" | "curator" | "viewer"
 
@@ -176,6 +178,11 @@ export interface ExportLog {
   exportedFileName: string | null
   artistCsvUrl: string | null
   artworkCsvUrl: string | null
+  artistXlsxUrl: string | null
+  artworkXlsxUrl: string | null
+  imageAuditSummary: string | null
+  imageLinksExpireAt: string | null
+  aaTemplateRevision: string | null
   exportType: ExportType | null
   campaignFilter: string | null
   triggeredBy: string | null

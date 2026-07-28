@@ -1,10 +1,13 @@
 import { getCampaigns } from "@/lib/airtable/client"
+import { allTemplateSummaries } from "@/lib/export/aa-templates"
 import { ExportPreview } from "./export-preview"
 
 export const dynamic = "force-dynamic"
 
 export default async function ExportPage() {
   const campaigns = await getCampaigns()
+  // Resolved on the server — the template registry reads from the filesystem.
+  const templates = allTemplateSummaries()
 
   // Sort alphabetically, filter to campaigns that have artists
   const activeCampaigns = campaigns
@@ -24,7 +27,7 @@ export default async function ExportPage() {
             Select a campaign to preview approved artists and artworks, then export to Artwork Archive CSV format.
           </p>
         </div>
-        <ExportPreview campaigns={activeCampaigns} />
+        <ExportPreview campaigns={activeCampaigns} templates={templates} />
       </div>
     </div>
   )

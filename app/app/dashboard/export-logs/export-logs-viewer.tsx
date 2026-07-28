@@ -39,6 +39,7 @@ function StatusBadge({ status }: { status: string | null }) {
     "Accepted": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     "Rejected": "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
     "Failed": "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    "Blocked": "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   }
   const className = variants[status ?? ""] ?? "bg-gray-100 text-gray-800"
   return (
@@ -352,8 +353,11 @@ export function ExportLogsViewer() {
                     </>
                   )}
 
-                  {/* Notes display for rejected/failed */}
-                  {(log.exportStatus === "Rejected" || log.exportStatus === "Failed") && log.exportNotes && (
+                  {/* Notes display for rejected/failed/blocked — a blocked
+                      export's audit detail is the only record of why it stopped */}
+                  {(log.exportStatus === "Rejected" ||
+                    log.exportStatus === "Failed" ||
+                    log.exportStatus === "Blocked") && log.exportNotes && (
                     <span className="text-xs text-muted-foreground max-w-48 truncate" title={log.exportNotes}>
                       {log.exportNotes}
                     </span>

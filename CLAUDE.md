@@ -15,11 +15,14 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 
 | # | Name | ID | Status | Purpose |
 |---|------|----|--------|---------|
-| 1 | **Intake V1.6** | `QtP1J9Fwr5SPRG0u` | Active | Webhook → normalize → upsert Campaign/Artist/Artworks → email notification → ActiveCampaign CRM |
-| 2 | **Enrichment V0.10** | `3c8WbVLT83fwnF2CaKIRz` | Active | Pre-process → artist research (Perplexity) → AI citation validation → bio quality evaluation → profile formatting (GPT-4.1) → artwork image classification (GPT-4o) → dimension extraction (GPT-4o-mini) with pipeline progress tracking |
-| 3 | **Social Profile Discovery V1.0** | `mRgdgMZTjamxK6S9` | Inactive (new) | Firecrawl website scrape → Perplexity deep-research → GPT-4.1 validation → Social Profiles (AI) field |
+| 1 | **Intake V1.7** | `QtP1J9Fwr5SPRG0u` | Active | Webhook → normalize → upsert Campaign/Artist/Artworks → email notification → ActiveCampaign CRM |
+| 2 | **Enrichment V0.11.0** | `3c8WbVLT83fwnF2CaKIRz` | Active | Pre-process → artist research (Perplexity) → AI citation validation → bio quality evaluation → profile formatting (GPT-4.1) → artwork image classification (GPT-4.1 vision) → dimension extraction (GPT-4o-mini) with pipeline progress tracking |
+| 3 | **Social Profile Discovery V0.1** | `GDdBMTBr2pk3oSbl` | **Active** | The version actually running. Undocumented below — the detail section describes V1.0. |
+| 3b | **Social Profile Discovery V1.0** | `mRgdgMZTjamxK6S9` | Inactive | Documented in "Workflow 3" below, but **not the active one**. Reconcile or retire. |
 | 4 | **Error Handler V1.0** | `iAGcwyumKEOc83kj` | Inactive | Error trigger → lookup campaign admins → Gmail notification |
 | old | **Intake V0.9** | `3TYwN_RyYT1P_vvwj-Kh1` | Inactive | Deprecated — do not use |
+
+> Table verified against `GET /api/v1/workflows` on 2026-07-25. Names, IDs, and active flags are authoritative as of that date.
 
 ## Airtable
 
@@ -44,11 +47,13 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 - **Artworks (enrichment + export):** `Pending - Imported` → `Pending - Enriched` (after image classification) → `Approved for Export` → `Exported` → `Accepted`. Artworks inherit artist eligibility via `Status (from Artist)` Lookup field — only artworks whose artist is "Pending - Enriched" are classified.
 - **Export pipeline:** Starts from artworks with status "Approved for Export". Artists are resolved by ID from linked artworks. Guards exclude artists who are `Needs Review`, `On Hold`, or missing `Artist Profile (AI)` — their artworks are excluded with a warning message.
 - **Export CSV field policy (#97):** Medium and Subject Matter columns contain **artist-submitted values only**. AI-enriched values for both fields are written to the Notes column under `MEDIUM (AI)` and `SUBJECT MATTER (AI)` headings (skipped when AI matches artist value). Dimensions (Height/Width/Depth) are AI-extracted from the artist's Description field — treated as artist data, not labeled as AI.
+- **Image links & the export audit ([#102](https://github.com/JuergenB/artwork-archive/issues/102)):** Paperform file URLs expire 7 days after generation, so the export re-mints every image URL through the Paperform API at export time. `app/lib/export/image-audit.ts` then checks each URL's embedded expiry *and* its liveness; if any image would ship stale the export returns **409, writes no files, and changes no record statuses**. Never weaken that gate. Two gotchas it exists to catch: Paperform strips `#`, `(`, `)` from URLs while the API returns the original filename (matched via `looseFilenameKey`), and **141 of 225 artworks have no `Submission ID (Paperform)`** because Intake V1.7's `Create or update Artworks` node never wrote it (see Workflow 1 known issue). Artworks without one inherit the linked artist's submission ID; the filename match still has to succeed, so a wrong submission blocks rather than shipping a bad link.
+- **Export formats:** both **.xlsx and .csv** are generated. The Excel files are AA's own template files with data rows appended from row 4, so the index/header/helper rows are theirs byte-for-byte. Both formats share the same row builders. AA's column contract is extracted from their `.xlsx` by `scripts/extract-aa-template.py` into `app/lib/export/__fixtures__/` and locked by `app/lib/aa-columns.test.ts` — when AA ships a revised template, drop it in, re-run the extractor, and let the tests report the drift. Never hand-edit the column registry.
 - **Dimensions toggle (#99):** Step 3 of the export UI has an "Exclude dimensions from CSV" checkbox (default **on**). When on, Height/Width/Depth columns stay blank and the values appear at the **top** of the artwork Notes under a `DIMENSIONS` heading (`Height: 24 in`, three lines, blank lines suppressed). Curator-driven temporary accommodation while artist-submitted dimensions are inconsistent — keeps them out of published exhibitions but visible during AA import review. Toggle off restores the legacy column-based behavior.
 
 ---
 
-## Workflow 1: Intake V1.6 — Detail
+## Workflow 1: Intake V1.7 — Detail
 
 **Trigger:** Webhook (receives form submission data)
 
@@ -62,14 +67,17 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 7. Aggregate success IDs → update Import Log
 8. On success: update artist status to "Pending", get campaign email info
 9. **Notification Email Prep** (Set node) — resolves all 9 placeholders in admin + submitter templates using `.replaceAll()` chains
-10. AI Email Beautifier (GPT-4o via LangChain) → send admin notification via Mailgun HTTP API
+10. AI Email Beautifier (Claude Haiku 4.5 via LangChain, node `Anthropic Claude Haiku 4.5`) → send admin notification via Mailgun HTTP API
 11. ActiveCampaign CRM: create/update contact, add to lists, resolve/create tags
 
 **Supported email placeholders:** `[[campaign_name]]`, `[[artist_first_name]]`, `[[artist_last_name]]`, `[[artist_email]]`, `[[submission_id]]`, `[[submission_date]]`, `[[artwork_count]]`, `[[airtable_record_url]]`, `[[paperform_submission_url]]`, `[[support_email]]`
 
 **Note:** Submitter confirmation email templates are prepared but NOT sent yet — requires submitter send node (see issue #50).
 
-**Integrations:** Airtable, Mailgun (HTTP API), ActiveCampaign, OpenAI (GPT-4o)
+### Known Issues
+- **`Create or update Artworks` does not write `Submission ID (Paperform)`** (verified against the live workflow 2026-07-28). The Artists node writes it; the Artworks node maps 18 fields and this is not one of them. Issue #23 claimed this was added in V1.7 — it was not. Consequence: 141 of 225 artworks carry no submission ID, so their image URLs cannot be refreshed at export time except via the artist fallback. **Fix requires the n8n UI** (the public API cannot write to this workflow — see Dev Environment): add field `Submission ID (Paperform)` with value `={{ $('Capture Artist & Campaign Data').item.json.submission_id }}`. Tracked in [#102](https://github.com/JuergenB/artwork-archive/issues/102).
+
+**Integrations:** Airtable, Mailgun (HTTP API), ActiveCampaign, Anthropic (Claude Haiku 4.5)
 
 ### Changelog
 - **V1.7 (2026-03-23):** Gmail → Mailgun migration (#51) — replaced Gmail OAuth2 send node with HTTP Request node calling Mailgun REST API (`POST /v3/mail.arterial.org/messages`). All emails now sent from `exhibitions@mail.arterial.org` (single verified domain, 10/10 mail-tester score). Added per-brand Reply-To via new `Reply-To Email` field on Campaigns table. Added per-brand From display name via new `Email Display Name` field on Campaigns table. Added `[[support_email]]` placeholder to submitter templates. Added Arterial 501(c)(3) footer to AI Email Beautifier prompt ("This email was sent by Arterial, the 501(c)(3) nonprofit behind [Brand Name]"). 3 new Set node assignments: Reply To Email, From Email, Support Email. Removed Gmail node and unused Mailgun node.
@@ -83,7 +91,7 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 
 ---
 
-## Workflow 2: Enrichment V0.10 — Detail
+## Workflow 2: Enrichment V0.11.0 — Detail
 
 **Trigger:** Webhook (`54ac3b7a-0479-4fa6-8965-204cd34addae`)
 
@@ -133,14 +141,15 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 10. Find Related Artworks — Airtable search: `AND({Status} = "Pending - Imported", {Status (from Artist)} = "Pending - Enriched")`
     - Uses `Status (from Artist)` Lookup field to gate artwork classification behind artist approval
     - Artworks belonging to "Needs Review" artists are excluded
+    - **`executeOnce: true` — do not remove.** This node's input is the *done* branch of `Loop Over Artists`, which emits one item per artist. An Airtable `search` node runs its query **once per input item** and concatenates results, so without this flag the queue becomes `artists × artworks` and every artwork is re-classified once per artist. See the V0.11.0 changelog entry for #100.
 11. **Loop Over Artworks** (`SplitInBatches`, batch size 1) — sequential processing
-12. **Artwork Image Classifier** — GPT-4o Vision Agent (temp 0.3, max 2000 tokens)
+12. **Artwork Image Classifier** — GPT-4.1 Vision Agent (node `GPT-4.1 Vision Model`, temp 0.3, max 2000 tokens)
     - Image-first prompt architecture: image URL sent before metadata to prevent hallucination
     - System prompt with `<critical_constraint>`, `<analysis_protocol>`, `<output_requirements>`, `<anti_hallucination_rules>` XML sections
     - Metadata (title, artist description) provided as "optional context" after image analysis
     - Outputs: tags (comma-separated), subject_matter (description), detected_medium
     - Artwork Output Parser with GPT-4.1-mini
-    - **Fetch Artwork Image** (HTTP Request) downloads Airtable thumbnail as binary before classifier — required for GPT-4o vision (text URLs don't trigger vision)
+    - **Fetch Artwork Image** (HTTP Request) downloads Airtable thumbnail as binary before classifier — required for vision (text URLs don't trigger vision)
 13. **Relevance Hypothesis** — Basic LLM Chain (GPT-4o-mini, temp 0.3)
     - Hypothesizes how artwork connects to exhibition theme
     - Inputs: classifier output (subject_matter, tags) + artwork context (title, description) + campaign name/description (via Lookup field)
@@ -158,8 +167,15 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 
 ### Known Issues
 - "Pre-Process Submission" Code node triggers MCP validator false positive ("Cannot return primitive values") — valid Code node v2 syntax, works at runtime
+- **No error path resets the dashboard.** `Complete Pipeline Run` and `Reset Action Status` sit downstream of the artwork loop, so any mid-run failure leaves Pipeline Actions stuck on `Running` with a stale queue count and Pipeline Runs with no `Completed At`. Both then need manual cleanup. Hit on 2026-07-25 (run `enrich-2026-07-25-044`).
+- **`Artwork Progress` can hit the n8n Cloud task-runner limit** — `Task request timed out after 60 seconds` ("task runner is down, not ready, or at capacity"). Killed run `enrich-2026-07-25-044` at artwork 269. Infrastructure limit, not a code defect; aggravated by oversized item sets.
 
 ### Changelog
+- **V0.11.0 (2026-07-25):** Duplicate artwork classification fix ([#100](https://github.com/JuergenB/artwork-archive/issues/100)):
+  - **`Find Related Artworks` → `executeOnce: true`.** The Airtable `search` node was running once per input item. Its input is the *done* branch of `Loop Over Artists` (one item per artist), so the search executed N times and concatenated results: run `enrich-2026-07-25-044` queued **14 artists × 44 artworks = 616 items** against a base holding only 222 artworks total. Pass 1 classified the 44 real artworks and flipped them to `Pending - Enriched`; passes 2–14 re-classified the same records from the stale in-memory list, because the status filter is evaluated only once at query time. Every prior run shows the same clean multiple (3×9=27, 2×7=14, 4×11=44). Cost was ~14× the necessary GPT-4.1 vision + GPT-4o-mini calls.
+  - **Applied via the n8n UI, not the API** — see the "n8n public API cannot write to these workflows" note under Dev Environment. Verified by API read-back: `versionId 7f6d09ba-8f09-46b8-9a31-7e74ec4895f8`, one-line diff across all 54 nodes, `settings.binaryMode` preserved.
+  - **Proven at runtime 2026-07-27** (verified 2026-07-28). Execution `12044` (success): `Find Pending Artists` → 2 items, `Find Related Artworks` → 3 items, `Artwork Image Classifier` → 3 items. With the bug present this would have been 2 × 3 = 6. Issue [#100](https://github.com/JuergenB/artwork-archive/issues/100) closed.
+- **V0.11.0 (date unknown — undocumented):** the live workflow was already named V0.11.0 before the fix above, with no changelog entry for it. One verified drift from the V0.10 docs: the **artwork classifier model is `gpt-4.1`**, not GPT-4o (node renamed `GPT-4.1 Vision Model`). Other V0.11.0 changes, if any, are unrecorded.
 - **V0.10 (2026-03-16):** AI dimension extraction (#72):
   - **Dimension Extractor** — new Basic LLM Chain (GPT-4o-mini, temp 0) + Structured Output Parser between Relevance Hypothesis and Update record. Extracts height, width, depth, and unit from artwork Description field. Handles all dimension formats (numeric, spelled-out, fractions, mixed units). Returns nulls when no dimensions found.
   - **Airtable field renames** — `Height` → `Height (AI)`, `Width` → `Width (AI)`, `Depth` → `Depth (AI)`. New field: `Dimensions Unit (AI)` (singleLineText). Values stored in original units (no conversion).
@@ -228,8 +244,8 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 | Bio Quality Evaluator (Quality Check Model) | GPT-4o-mini (temp 0.1) | Profile quality evaluation |
 | Artist Profile Formatter (GPT-4.1 Formatter) | GPT-4.1 (temp 0.2, JSON Schema strict mode) | Profile formatting |
 | Structured Output Parser | GPT-4.1 (temp 0.3) | JSON extraction |
-| AI Email Beautifier | GPT-4o | Email HTML generation |
-| Artwork Image Classifier | GPT-4o | Vision-based artwork analysis |
+| AI Email Beautifier (Anthropic Claude Haiku 4.5) | `claude-haiku-4-5-20251001` | Email HTML generation |
+| Artwork Image Classifier (GPT-4.1 Vision Model) | GPT-4.1 (temp 0.3, max 2000 tokens) | Vision-based artwork analysis |
 | Relevance Hypothesis (Relevance Model) | GPT-4o-mini (temp 0.3) | Artwork-to-exhibition theme connection |
 | Dimension Extractor (Dimension Model) | GPT-4o-mini (temp 0) | Dimension extraction from description text |
 | Artwork Output Parser | GPT-4.1-mini | JSON extraction |
@@ -245,6 +261,8 @@ Automated artwork submission intake and enrichment pipeline for an art gallery/a
 - **No local code** — all logic lives in n8n workflow nodes
 - **Airtable auth:** OAuth2 (configured in n8n credentials)
 - **User Timezone:** America/New_York (Eastern Time)
+- **⚠️ The n8n public API cannot write to these workflows (verified 2026-07-25).** `PUT /api/v1/workflows/{id}` **requires** a `settings` property but **rejects** `settings.binaryMode` — and Intake V1.7, Enrichment V0.11.0, and Social Profile Discovery all carry `settings.binaryMode: "separate"` (10 workflows instance-wide). This also breaks `n8n_update_partial_workflow` / `n8n_update_full_workflow`, which fail with `request/body must NOT have additional properties`. Probed key by key: `callerPolicy` and `availableInMCP` are accepted; only `binaryMode` is rejected. The internal `/rest/` API returns **401** with an API key (needs a browser session cookie). `binaryMode` is undocumented in the n8n docs, and the Enrichment vision path depends on binary handling, so **do not strip it to force a write.** Node changes must be made **in the n8n UI**, then verified with `GET /api/v1/workflows/{id}` — read back the changed field, diff the full node set against a pre-change snapshot, and confirm `settings.binaryMode` survived. Tracked on epic [#85](https://github.com/JuergenB/artwork-archive/issues/85) (moved there when [#100](https://github.com/JuergenB/artwork-archive/issues/100) was closed — the blocker is unrelated to that issue's duplicate-classification bug). Re-confirmed still present 2026-07-28.
+- **Airtable `search` nodes execute once per input item** and concatenate results. Any Airtable search fed by a multi-item stream (notably a `SplitInBatches` *done* branch) needs `executeOnce: true`, or the result set is silently multiplied. This caused [#100](https://github.com/JuergenB/artwork-archive/issues/100) — 616 queued artworks against a 222-record table.
 - **n8n expression rule:** Never use `$json` or `$json['field']` in expression fields. Always use `$('NodeName').item.json['field']`. The `$json` shorthand silently breaks when nodes are reordered. See V1.4 changelog.
 - **Set node v3.4 format:** Use `assignments.assignments[{id, name, value, type}]`, NOT `fields.values[{name, stringValue}]`. The old format saves via API but renders empty in the n8n UI. See skill template #10.
 - **n8n Reference Workflow:** `o6oYKsfttQnm4n7t` — contains verified node configs for Set, Firecrawl, chainLlm, lmChatOpenAi, outputParserStructured. Clone from here.

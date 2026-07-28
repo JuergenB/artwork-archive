@@ -265,3 +265,28 @@ function buildColumns(
 export const AA_ARTIST_COLUMNS = buildColumns(ARTIST_HEADERS, ARTIST_HELPER_TEXT, "artist")
 export const AA_ARTWORK_COLUMNS = buildColumns(ARTWORK_HEADERS, ARTWORK_HELPER_TEXT, "artwork")
 export const ALL_AA_COLUMNS = [...AA_ARTIST_COLUMNS, ...AA_ARTWORK_COLUMNS]
+
+// ─── Controlled vocabularies ────────────────────────────
+
+/**
+ * Read a column's closed vocabulary out of AA's own helper text
+ * ("USE ONE OF THE FOLLOWING: Book, Ceramic, …"). Deriving it from the helper
+ * row means the list cannot drift from the template we ship.
+ * Returns null for free-text columns.
+ */
+export function allowedValuesFor(column: AAColumn): string[] | null {
+  const marker = column.helperText.toUpperCase().indexOf("ONE OF THE FOLLOWING")
+  if (marker < 0) return null
+
+  const colon = column.helperText.indexOf(":", marker)
+  if (colon < 0) return null
+
+  return column.helperText
+    .slice(colon + 1)
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+}
+
+/** AA's allowed values for the artwork Type column. */
+export const AA_ARTWORK_TYPES: string[] = allowedValuesFor(AA_ARTWORK_COLUMNS[5]) ?? []
