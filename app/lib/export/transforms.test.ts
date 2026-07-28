@@ -132,6 +132,12 @@ describe("socialMediaProfile", () => {
         "https://www.instagram.com/artguy",
       )
     })
+
+    it("strips @ from the URL path", () => {
+      expect(
+        socialMediaProfile("https://www.instagram.com/@zesty_goddess"),
+      ).toBe("https://www.instagram.com/zesty_goddess")
+    })
   })
 
   describe("Facebook", () => {
@@ -143,6 +149,35 @@ describe("socialMediaProfile", () => {
 
     it("normalizes handle with platform hint", () => {
       expect(socialMediaProfile("mypage", "facebook")).toBe(
+        "https://www.facebook.com/mypage",
+      )
+    })
+
+    it("preserves the id query param on profile.php URLs", () => {
+      expect(
+        socialMediaProfile("https://www.facebook.com/profile.php?id=61550123456789"),
+      ).toBe("https://www.facebook.com/profile.php?id=61550123456789")
+    })
+
+    it("preserves the id when other query params precede it", () => {
+      expect(
+        socialMediaProfile("https://www.facebook.com/profile.php?sk=about&id=61550123456789"),
+      ).toBe("https://www.facebook.com/profile.php?sk=about&id=61550123456789")
+    })
+
+    it("drops trailing query params after the id", () => {
+      expect(
+        socialMediaProfile("https://www.facebook.com/profile.php?id=61550123456789&sk=about"),
+      ).toBe("https://www.facebook.com/profile.php?id=61550123456789")
+    })
+
+    it("returns empty for profile.php with no recoverable id", () => {
+      expect(socialMediaProfile("https://www.facebook.com/profile.php")).toBe("")
+      expect(socialMediaProfile("https://www.facebook.com/profile.php?sk=about")).toBe("")
+    })
+
+    it("strips @ from the URL path", () => {
+      expect(socialMediaProfile("https://www.facebook.com/@mypage")).toBe(
         "https://www.facebook.com/mypage",
       )
     })
@@ -158,6 +193,54 @@ describe("socialMediaProfile", () => {
     it("normalizes handle with platform hint", () => {
       expect(socialMediaProfile("johndoe", "linkedin")).toBe(
         "https://www.linkedin.com/in/johndoe",
+      )
+    })
+
+    it("normalizes company pages to /company/, not /in/", () => {
+      expect(
+        socialMediaProfile("https://www.linkedin.com/company/north-carolina-arboretum/"),
+      ).toBe("https://www.linkedin.com/company/north-carolina-arboretum")
+    })
+
+    it("normalizes company pages with an explicit platform hint", () => {
+      expect(
+        socialMediaProfile("https://www.linkedin.com/company/north-carolina-arboretum/", "linkedin"),
+      ).toBe("https://www.linkedin.com/company/north-carolina-arboretum")
+    })
+  })
+
+  // A URL that matches no pattern must never be wrapped in canonical() — that
+  // produced https://www.linkedin.com/in/https://www.linkedin.com/company/…
+  describe("never nests a URL inside a canonical URL", () => {
+    const oneHttp = (s: string) => (s.match(/http/g) ?? []).length
+
+    it("passes through an unenumerated LinkedIn path intact", () => {
+      const out = socialMediaProfile("https://www.linkedin.com/school/some-school/", "linkedin")
+      expect(oneHttp(out)).toBe(1)
+      expect(out).toBe("https://www.linkedin.com/school/some-school")
+    })
+
+    it("does not nest an unenumerated Facebook path", () => {
+      const out = socialMediaProfile("https://www.facebook.com/pages/Some-Name/123456")
+      expect(oneHttp(out)).toBe(1)
+      expect(out.startsWith("https://www.facebook.com/")).toBe(true)
+    })
+
+    it("does not nest a scheme-less domain path", () => {
+      const out = socialMediaProfile("linkedin.com/company/north-carolina-arboretum", "linkedin")
+      expect(oneHttp(out)).toBe(1)
+      expect(out).toBe("https://www.linkedin.com/company/north-carolina-arboretum")
+    })
+
+    it("still canonicalizes genuinely handle-shaped input", () => {
+      expect(socialMediaProfile("artguy", "instagram")).toBe(
+        "https://www.instagram.com/artguy",
+      )
+      expect(socialMediaProfile("@artguy", "instagram")).toBe(
+        "https://www.instagram.com/artguy",
+      )
+      expect(socialMediaProfile("north-carolina-arboretum", "linkedin")).toBe(
+        "https://www.linkedin.com/in/north-carolina-arboretum",
       )
     })
   })
@@ -187,6 +270,45 @@ describe("socialMediaProfile", () => {
       expect(
         socialMediaProfile("https://pinterest.com/artboard"),
       ).toBe("https://www.pinterest.com/artboard")
+    })
+
+    it("strips @ from the URL path", () => {
+      expect(socialMediaProfile("https://pinterest.com/@artboard")).toBe(
+        "https://www.pinterest.com/artboard",
+      )
+    })
+  })
+
+  // Values verified against a real AA export — these must not change
+  describe("real export regressions", () => {
+    it("preserves Instagram profiles", () => {
+      expect(socialMediaProfile("https://www.instagram.com/beth_grossman_art")).toBe(
+        "https://www.instagram.com/beth_grossman_art",
+      )
+      expect(socialMediaProfile("https://www.instagram.com/joas.nebe")).toBe(
+        "https://www.instagram.com/joas.nebe",
+      )
+      expect(socialMediaProfile("https://www.instagram.com/christysavage666")).toBe(
+        "https://www.instagram.com/christysavage666",
+      )
+    })
+
+    it("preserves Facebook profiles", () => {
+      expect(socialMediaProfile("https://www.facebook.com/beth.grossman1")).toBe(
+        "https://www.facebook.com/beth.grossman1",
+      )
+      expect(socialMediaProfile("https://www.facebook.com/aynexquilts")).toBe(
+        "https://www.facebook.com/aynexquilts",
+      )
+    })
+
+    it("preserves LinkedIn profiles", () => {
+      expect(socialMediaProfile("https://www.linkedin.com/in/beth-grossman-3514831")).toBe(
+        "https://www.linkedin.com/in/beth-grossman-3514831",
+      )
+      expect(socialMediaProfile("https://www.linkedin.com/in/brooke-mcgowen-7868b433")).toBe(
+        "https://www.linkedin.com/in/brooke-mcgowen-7868b433",
+      )
     })
   })
 

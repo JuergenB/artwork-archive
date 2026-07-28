@@ -62,6 +62,18 @@ export function urlValidate(value: string | null | undefined): string {
 interface SocialPlatform {
   patterns: RegExp[]
   canonical: (handle: string) => string
+  /** URL shapes that canonicalize differently from `canonical` (LinkedIn company pages) */
+  altForms?: { pattern: RegExp; canonical: (handle: string) => string }[]
+}
+
+/** All URL forms for a platform, default shape first, each paired with its own canonical */
+function formsFor(
+  config: SocialPlatform,
+): { pattern: RegExp; canonical: (handle: string) => string }[] {
+  return [
+    ...config.patterns.map((pattern) => ({ pattern, canonical: config.canonical })),
+    ...(config.altForms ?? []),
+  ]
 }
 
 const SOCIAL_PLATFORMS: Record<string, SocialPlatform> = {
@@ -70,12 +82,24 @@ const SOCIAL_PLATFORMS: Record<string, SocialPlatform> = {
     canonical: (h) => `https://www.instagram.com/${h}`,
   },
   facebook: {
-    patterns: [/(?:https?:\/\/)?(?:www\.)?facebook\.com\/([^/?#\s]+)/i],
+    patterns: [
+      // Numeric-ID profiles live at profile.php?id=… — the id is part of the
+      // address, so it must be captured before the generic path pattern drops it
+      /(?:https?:\/\/)?(?:www\.)?facebook\.com\/(profile\.php\?(?:[^#\s]*&)?id=\d+)/i,
+      /(?:https?:\/\/)?(?:www\.)?facebook\.com\/([^/?#\s]+)/i,
+    ],
     canonical: (h) => `https://www.facebook.com/${h}`,
   },
   linkedin: {
     patterns: [/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/([^/?#\s]+)/i],
     canonical: (h) => `https://www.linkedin.com/in/${h}`,
+    altForms: [
+      // Organizations live at /company/<slug>, not /in/<slug>
+      {
+        pattern: /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/company\/([^/?#\s]+)/i,
+        canonical: (h) => `https://www.linkedin.com/company/${h}`,
+      },
+    ],
   },
   pinterest: {
     patterns: [/(?:https?:\/\/)?(?:www\.)?pinterest\.com\/([^/?#\s]+)/i],
@@ -106,7 +130,7 @@ export function socialMediaProfile(
   let detectedPlatform = platform?.toLowerCase()
   if (!detectedPlatform) {
     for (const [name, config] of Object.entries(SOCIAL_PLATFORMS)) {
-      for (const pattern of config.patterns) {
+      for (const { pattern } of formsFor(config)) {
         if (pattern.test(input)) {
           detectedPlatform = name
           break
@@ -124,11 +148,22 @@ export function socialMediaProfile(
   const config = SOCIAL_PLATFORMS[detectedPlatform]
 
   // Try to extract handle from URL
-  for (const pattern of config.patterns) {
+  for (const { pattern, canonical } of formsFor(config)) {
     const match = input.match(pattern)
     if (match?.[1]) {
-      return config.canonical(match[1])
+      // "@" survives in the path when a display handle was pasted into a URL
+      const handle = match[1].replace(/^@/, "")
+      // facebook.com/profile.php without an id resolves to nothing —
+      // a blank cell beats a dead link in a file sent to AA
+      if (!handle || handle.toLowerCase() === "profile.php") return ""
+      return canonical(handle)
     }
+  }
+
+  // URL-shaped input that matched no pattern must never be wrapped — canonical()
+  // would nest it inside a platform URL. An unrecognized but intact URL is fine.
+  if (input.includes("://") || /^(?:www\.)?[a-z0-9-]+\.[a-z]{2,}\//i.test(input)) {
+    return urlValidate(input)
   }
 
   // Strip @ prefix and treat as handle
