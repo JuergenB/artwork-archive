@@ -16,8 +16,39 @@ import {
   generateArtistCsv,
   generateArtworkCsv,
   generateExportFileNames,
+  buildArtistCsvRow,
+  buildArtworkCsvRow,
 } from "@/lib/export/csv-generator"
-import { batchRefreshImageUrls } from "@/lib/paperform/client"
+import {
+  validateArtistRows,
+  validateArtworkRows,
+  formatViolations,
+} from "@/lib/export/template-validation"
+import { generateArtistXlsx, generateArtworkXlsx } from "@/lib/export/xlsx-generator"
+import { refreshImageUrls, toFreshUrlMap, type RefreshOutcome } from "@/lib/paperform/client"
+import {
+  auditImageUrls,
+  formatAuditFailures,
+  type AuditInput,
+} from "@/lib/export/image-audit"
+import { allTemplateSummaries, templateProvenanceForEmail } from "@/lib/export/aa-templates"
+
+function splitImageUrls(value: string | null | undefined): string[] {
+  if (!value) return []
+  return value.split("|").map((u) => u.trim()).filter(Boolean)
+}
+
+// Reads AA's .xlsx templates from disk and uses exceljs — Node runtime, not edge.
+export const runtime = "nodejs"
+
+/**
+ * This route is slow by nature: one Paperform API call per submission, a
+ * liveness check per image, Excel + CSV generation, then four blob uploads.
+ * A 62-image export measures ~13s locally, which already exceeds Vercel's
+ * default route-handler limit, and the record set only grows. Without this the
+ * export dies mid-flight in production.
+ */
+export const maxDuration = 300
 
 export async function POST(request: NextRequest) {
   let exportLogId: string | null = null
@@ -158,21 +189,49 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 5. Refresh image URLs via Paperform API (fresh signed URLs for CSV)
-    const allRecords = [
+    // 5. Refresh image URLs via Paperform API (fresh signed URLs for the export)
+    //
+    // Artworks imported before the intake workflow began storing
+    // "Submission ID (Paperform)" have no ID of their own. Fall back to the
+    // linked artist's submission. This cannot produce a wrong image: the
+    // refreshed URL is only accepted when the filename also matches, so an
+    // artist's later submission simply fails to match and blocks the export.
+    const artistSubmissionIds = new Map<string, string>()
+    for (const artist of enrichedArtists) {
+      if (artist.submissionIdPaperform) {
+        artistSubmissionIds.set(artist.id, artist.submissionIdPaperform)
+      }
+    }
+
+    const resolveArtworkSubmissionId = (aw: (typeof enrichedArtworks)[number]): string | null => {
+      if (aw.submissionIdPaperform) return aw.submissionIdPaperform
+      for (const artistId of aw.artistIds) {
+        const inherited = artistSubmissionIds.get(artistId)
+        if (inherited) return inherited
+      }
+      return null
+    }
+
+    const refreshOutcomes = await refreshImageUrls([
       ...enrichedArtists.map((a) => ({
         submissionId: a.submissionIdPaperform,
         imageUrls: [a.contactImageUrl].filter((u): u is string => u != null),
+        label: a.fullName || a.email || a.id,
       })),
       ...enrichedArtworks.map((aw) => ({
-        submissionId: aw.submissionIdPaperform,
-        imageUrls: aw.pieceImageUrls?.split("|").map((u) => u.trim()).filter(Boolean) ?? [],
+        submissionId: resolveArtworkSubmissionId(aw),
+        imageUrls: splitImageUrls(aw.pieceImageUrls),
+        label: aw.pieceName || aw.id,
       })),
-    ]
+    ])
 
-    const freshUrlMap = await batchRefreshImageUrls(allRecords)
+    const freshUrlMap = toFreshUrlMap(refreshOutcomes)
+    const failureByUrl = new Map<string, RefreshOutcome>()
+    for (const outcome of refreshOutcomes) {
+      if (outcome.status !== "refreshed") failureByUrl.set(outcome.originalUrl, outcome)
+    }
 
-    // Replace expired URLs with fresh ones in enriched records
+    // Replace stale URLs with fresh ones in the enriched records
     for (const artist of enrichedArtists) {
       if (artist.contactImageUrl && freshUrlMap.has(artist.contactImageUrl)) {
         artist.contactImageUrl = freshUrlMap.get(artist.contactImageUrl)!
@@ -180,24 +239,111 @@ export async function POST(request: NextRequest) {
     }
     for (const artwork of enrichedArtworks) {
       if (artwork.pieceImageUrls) {
-        artwork.pieceImageUrls = artwork.pieceImageUrls
-          .split("|")
-          .map((u) => u.trim())
+        artwork.pieceImageUrls = splitImageUrls(artwork.pieceImageUrls)
           .map((u) => freshUrlMap.get(u) ?? u)
           .join("|")
       }
     }
 
-    // 6. Generate CSVs
+    // 6. Audit every image URL that would ship. A partially-refreshed export is
+    //    what causes failed AA imports and manual image hunting, so this blocks.
+    const auditInputs: AuditInput[] = []
+    const originalUrlOf = (url: string) => {
+      for (const [original, fresh] of freshUrlMap) if (fresh === url) return original
+      return url
+    }
+
+    for (const artist of enrichedArtists) {
+      if (!artist.contactImageUrl) continue
+      const failure = failureByUrl.get(originalUrlOf(artist.contactImageUrl))
+      auditInputs.push({
+        url: artist.contactImageUrl,
+        recordLabel: artist.fullName || artist.email || artist.id,
+        entityType: "artist",
+        refreshFailure: failure?.detail ?? (failure ? failure.status : undefined),
+      })
+    }
+    for (const artwork of enrichedArtworks) {
+      for (const url of splitImageUrls(artwork.pieceImageUrls)) {
+        const failure = failureByUrl.get(originalUrlOf(url))
+        auditInputs.push({
+          url,
+          recordLabel: artwork.pieceName || artwork.id,
+          entityType: "artwork",
+          refreshFailure: failure?.detail ?? (failure ? failure.status : undefined),
+        })
+      }
+    }
+
+    const audit = await auditImageUrls(auditInputs, { verifyLiveness: true })
+
+    if (!audit.ok) {
+      const detail = formatAuditFailures(audit)
+      await updateExportLog(exportLogId, {
+        "Export Status": "Blocked",
+        "Image Audit Summary": detail,
+        "Export Notes": [
+          "Export blocked — image URL audit failed. No files were generated and no record statuses were changed.",
+          detail,
+        ].join("\n\n"),
+      })
+
+      return NextResponse.json(
+        {
+          error: "Export blocked — some image links would reach Artwork Archive already expired.",
+          detail,
+          audit: {
+            ok: false,
+            totalImages: audit.totalImages,
+            failureCount: audit.failures.length,
+            summary: audit.summary,
+            failures: audit.failures.map((f) => ({
+              recordLabel: f.recordLabel,
+              entityType: f.entityType,
+              status: f.status,
+              detail: f.detail ?? null,
+            })),
+          },
+          exportLogId,
+        },
+        { status: 409 },
+      )
+    }
+
+    // 7. Check values against AA's controlled vocabularies. Reported, not
+    //    blocked — these records still import, but AA may reject the value.
+    const vocabularyWarning = formatViolations([
+      ...validateArtistRows(enrichedArtists.map(buildArtistCsvRow)),
+      ...validateArtworkRows(
+        enrichedArtworks.map((aw) =>
+          buildArtworkCsvRow(aw, { dimensionsInNotes: excludeDimensions }),
+        ),
+      ),
+    ])
+
+    // 8. Generate CSV + Excel. Both formats share the same row builders, and the
+    //    Excel files are AA's own templates with our rows appended.
     const artistCsv = generateArtistCsv(enrichedArtists)
     const artworkCsv = generateArtworkCsv(enrichedArtworks, {
       dimensionsInNotes: excludeDimensions,
     })
+    const [artistXlsx, artworkXlsx] = await Promise.all([
+      generateArtistXlsx(enrichedArtists),
+      generateArtworkXlsx(enrichedArtworks, { dimensionsInNotes: excludeDimensions }),
+    ])
 
-    // 7. Upload to Vercel Blob
-    const { artistFileName, artworkFileName } = generateExportFileNames(campaignName)
+    // 8. Upload to Vercel Blob
+    const {
+      artistFileName,
+      artworkFileName,
+      artistXlsxFileName,
+      artworkXlsxFileName,
+    } = generateExportFileNames(campaignName)
 
-    const [artistBlob, artworkBlob] = await Promise.all([
+    const XLSX_CONTENT_TYPE =
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+    const [artistBlob, artworkBlob, artistXlsxBlob, artworkXlsxBlob] = await Promise.all([
       put(artistFileName, artistCsv, {
         access: "public",
         contentType: "text/csv",
@@ -208,22 +354,44 @@ export async function POST(request: NextRequest) {
         contentType: "text/csv",
         addRandomSuffix: true,
       }),
+      put(artistXlsxFileName, artistXlsx, {
+        access: "public",
+        contentType: XLSX_CONTENT_TYPE,
+        addRandomSuffix: true,
+      }),
+      put(artworkXlsxFileName, artworkXlsx, {
+        access: "public",
+        contentType: XLSX_CONTENT_TYPE,
+        addRandomSuffix: true,
+      }),
     ])
 
-    // 8. Prepare email draft
+    // 9. Prepare email draft. The import deadline is the earliest real expiry
+    //    found by the audit, not an assumed now+7d.
+    const deadline = audit.earliestExpiry
+    const deadlineText = deadline
+      ? deadline.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+      : null
+
     const emailSubject = `Artwork Archive Import — ${campaignName} — ${new Date().toLocaleDateString("en-US")}`
     const emailBody = [
       `Hi,`,
       ``,
-      `Here are the CSV files for the ${campaignName} export:`,
+      `Here are the files for the ${campaignName} export. Both Excel and CSV are provided — they contain identical data, so please use whichever suits your import.`,
       ``,
       `Artists (${artists.length}):`,
-      artistBlob.url,
+      `  Excel: ${artistXlsxBlob.url}`,
+      `  CSV:   ${artistBlob.url}`,
       ``,
       `Artworks (${artworks.length}):`,
-      artworkBlob.url,
+      `  Excel: ${artworkXlsxBlob.url}`,
+      `  CSV:   ${artworkBlob.url}`,
       ``,
-      `Note: Image links in the CSV files expire in 7 days. Please complete the import by ${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}. If needed, we can re-export with fresh links.`,
+      templateProvenanceForEmail(),
+      ``,
+      deadlineText
+        ? `Every image link in these files was freshly generated for this export and is valid until ${deadlineText}. Please complete the import by then — if the window passes, let us know and we will re-export with fresh links at no trouble.`
+        : `Image links in these files were freshly generated for this export.`,
       ``,
       `Please let me know once the import is complete.`,
       ``,
@@ -231,17 +399,33 @@ export async function POST(request: NextRequest) {
       `Kirsten`,
     ].join("\n")
 
-    // 9. Update Export Log with URLs and status
+    // 10. Update Export Log with URLs, audit result and template provenance
+    const templateRevision = allTemplateSummaries()
+      .map((t) => `${t.entityType}: ${t.fileName} (${t.revisionLabel}, revised ${t.revisedOn ?? "unknown"}, ${t.columnCount} cols, sha256 ${t.sha256Short})`)
+      .join("\n")
+
     await updateExportLog(exportLogId, {
       "Export Status": "Exported",
       "Artist CSV URL": artistBlob.url,
       "Artwork CSV URL": artworkBlob.url,
-      "Exported File Name": `${artistFileName}, ${artworkFileName}`,
+      "Artist XLSX URL": artistXlsxBlob.url,
+      "Artwork XLSX URL": artworkXlsxBlob.url,
+      "Image Audit Summary": [audit.summary, vocabularyWarning ?? ""]
+        .filter(Boolean)
+        .join("\n\n"),
+      "Image Links Expire At": deadline ? deadline.toISOString() : "",
+      "AA Template Revision": templateRevision,
+      "Exported File Name": [
+        artistFileName,
+        artworkFileName,
+        artistXlsxFileName,
+        artworkXlsxFileName,
+      ].join(", "),
       "Email Subject": emailSubject,
       "Email Body": emailBody,
     })
 
-    // 10. Update artwork statuses to "Exported" (skip in test mode)
+    // 11. Update artwork statuses to "Exported" (skip in test mode)
     // Artist statuses are NOT updated — decoupled per issue #91
     if (!testMode) {
       const artworkIds = artworks.map((aw) => aw.id)
@@ -253,6 +437,8 @@ export async function POST(request: NextRequest) {
       exportId,
       artistCsvUrl: artistBlob.url,
       artworkCsvUrl: artworkBlob.url,
+      artistXlsxUrl: artistXlsxBlob.url,
+      artworkXlsxUrl: artworkXlsxBlob.url,
       artistCount: artists.length,
       artworkCount: artworks.length,
       campaignName,
@@ -260,6 +446,14 @@ export async function POST(request: NextRequest) {
       emailBody,
       enrichmentWarning,
       aaMatchWarning,
+      vocabularyWarning,
+      audit: {
+        ok: true,
+        totalImages: audit.totalImages,
+        summary: audit.summary,
+        expiresAt: deadline ? deadline.toISOString() : null,
+      },
+      templates: allTemplateSummaries(),
     })
   } catch (error) {
     console.error("Export generation error:", error)

@@ -1,0 +1,365 @@
+{
+  "entityType": "artwork",
+  "provenance": {
+    "fileName": "ArtworkArchive-CollectorOrgVersionPieceImportTemplate.xlsx",
+    "repoPath": "docs/knowledge/artwork archive formats/April 2026/ArtworkArchive-CollectorOrgVersionPieceImportTemplate.xlsx",
+    "revisionLabel": "April 2026",
+    "revisedAt": "2026-01-14T00:01:31Z",
+    "createdAt": "2016-05-26T16:44:07Z",
+    "author": "John Feustel",
+    "sha256": "ec747ba30ad07295db1114aadc5572e9c39e0ecec52a296fb5edcefddeeeedc9",
+    "sizeBytes": 17263
+  },
+  "sheetName": "csvtemplate.csv",
+  "headerRow": 2,
+  "helperRow": 3,
+  "firstDataRow": 4,
+  "columnCount": 69,
+  "columns": [
+    {
+      "index": 0,
+      "name": "Piece Name",
+      "helperText": "Name of artwork goes here"
+    },
+    {
+      "index": 1,
+      "name": "Artist First Name",
+      "helperText": ""
+    },
+    {
+      "index": 2,
+      "name": "Artist Last Name",
+      "helperText": ""
+    },
+    {
+      "index": 3,
+      "name": "Inventory Number",
+      "helperText": "Leave blank unless you have your own inventory or ID system"
+    },
+    {
+      "index": 4,
+      "name": "Medium",
+      "helperText": "Medium information goes here"
+    },
+    {
+      "index": 5,
+      "name": "Type",
+      "helperText": "USE ONE OF THE FOLLOWING: Book, Ceramic, Collage, Digital, Drawing, Fiber, Film/Video, Furniture, Garment, Glass, Illustration, Installation, Jewelry, Metalwork, Mixed Media, Mosaic, Mural, New Media, Other, Painting, Performance, Photography, Print, Sculpture, Textile, Wood, Work on Paper"
+    },
+    {
+      "index": 6,
+      "name": "Status",
+      "helperText": "USE ONE OF THE FOLLOWING: in_progress, available, reserved, donated, gifted, sold, not_for_sale, on_loan, installed, in_storage, in_transit, under_maintenance, work_destroyed, lost, stolen, deaccessioned, returned_to_owner"
+    },
+    {
+      "index": 7,
+      "name": "Height",
+      "helperText": "Enter Number Only: default is inches.  Specify if cm"
+    },
+    {
+      "index": 8,
+      "name": "Width",
+      "helperText": "Enter Number Only: default is inches.  Specify if cm"
+    },
+    {
+      "index": 9,
+      "name": "Depth",
+      "helperText": "Enter Number Only: default is inches.  Specify if cm"
+    },
+    {
+      "index": 10,
+      "name": "Dimension Override",
+      "helperText": "Use this if your dimensions do not fit into h/w/d format. This can be any text string such as \"12 inch diameter\""
+    },
+    {
+      "index": 11,
+      "name": "Paper Height",
+      "helperText": "Enter Number Only: default is inches.  Specify if cm"
+    },
+    {
+      "index": 12,
+      "name": "Paper Width",
+      "helperText": "Enter Number Only: default is inches.  Specify if cm"
+    },
+    {
+      "index": 13,
+      "name": "Framed",
+      "helperText": "Mark Yes or No"
+    },
+    {
+      "index": 14,
+      "name": "Framed Height",
+      "helperText": "Enter Number Only: default is inches.  Specify if cm"
+    },
+    {
+      "index": 15,
+      "name": "Framed Width",
+      "helperText": "Enter Number Only: default is inches.  Specify if cm"
+    },
+    {
+      "index": 16,
+      "name": "Framed Depth",
+      "helperText": "Enter Number Only: default is inches.  Specify if cm"
+    },
+    {
+      "index": 17,
+      "name": "Subject Matter",
+      "helperText": "Enter subject matter here"
+    },
+    {
+      "index": 18,
+      "name": "Price",
+      "helperText": "Add retail price here"
+    },
+    {
+      "index": 19,
+      "name": "Fair Market Value",
+      "helperText": "Add FMV here"
+    },
+    {
+      "index": 20,
+      "name": "Wholesale Value",
+      "helperText": "Add wholesale price here"
+    },
+    {
+      "index": 21,
+      "name": "Insurance Value",
+      "helperText": "Add inurance value here"
+    },
+    {
+      "index": 22,
+      "name": "Creation Date",
+      "helperText": "Date work was created  Format as:mm/dd/yyyy. If just year use yyyy"
+    },
+    {
+      "index": 23,
+      "name": "Circa",
+      "helperText": "If the date is Circa, mark yes here"
+    },
+    {
+      "index": 24,
+      "name": "Creation date override",
+      "helperText": "Use this if you want the creation date to display something other than a year. For exmaple \"19th Century\""
+    },
+    {
+      "index": 25,
+      "name": "Description",
+      "helperText": "Description of the artwork goes here"
+    },
+    {
+      "index": 26,
+      "name": "Tags",
+      "helperText": "Comma separated list of Tags"
+    },
+    {
+      "index": 27,
+      "name": "Notes",
+      "helperText": ""
+    },
+    {
+      "index": 28,
+      "name": "Collections",
+      "helperText": "Comma separated list of collections"
+    },
+    {
+      "index": 29,
+      "name": "Current Location Name",
+      "helperText": "This is where the work is currently located. This is NOT where you enter who you sold the work to.  That is done in later columns"
+    },
+    {
+      "index": 30,
+      "name": "Current Location Start Date",
+      "helperText": "Format as:mm/dd/yyyy. If just year use yyyy"
+    },
+    {
+      "index": 31,
+      "name": "Current Location End Date",
+      "helperText": "Format as:mm/dd/yyyy. If just year use yyyy"
+    },
+    {
+      "index": 32,
+      "name": "Sub Location Name ",
+      "helperText": "Only available for Organization accounts"
+    },
+    {
+      "index": 33,
+      "name": "Tertiary Location Name",
+      "helperText": "Only available for Organization accounts"
+    },
+    {
+      "index": 34,
+      "name": "Location Record Notes",
+      "helperText": "Notes on this location record"
+    },
+    {
+      "index": 35,
+      "name": "Location Record Longitude",
+      "helperText": "Only available for Organization accounts. Only enter if GPS location is different from the location address"
+    },
+    {
+      "index": 36,
+      "name": "Location Record Latitude",
+      "helperText": "Only available for Organization accounts. Only enter if GPS location is different from the location address"
+    },
+    {
+      "index": 37,
+      "name": "Sale/Donation/Gift",
+      "helperText": "*Only use if you or your organization sold/donated/gifted the work.This is used to capture sales, donations and giftings of your work.  The options for this column are \"sale\", \"donation\", \"gift\" or leave blank."
+    },
+    {
+      "index": 38,
+      "name": "Sale Location",
+      "helperText": "If sold from a location, you can list that here."
+    },
+    {
+      "index": 39,
+      "name": "Sale/Donation/Gift Date",
+      "helperText": "Format as:mm/dd/yyyy. If just year use yyyy"
+    },
+    {
+      "index": 40,
+      "name": "Sale/Donation/Gift Price",
+      "helperText": "Amount the work was sold for"
+    },
+    {
+      "index": 41,
+      "name": "Sale Discount",
+      "helperText": "Discount off the sale price (In currency units)"
+    },
+    {
+      "index": 42,
+      "name": "Sale Commission",
+      "helperText": "Commission taken off the sale price (In currency units)"
+    },
+    {
+      "index": 43,
+      "name": "First Name/Company Name of who you sold/donated/gifted to",
+      "helperText": "Use this to record the first name or company name of the buyer or recipient"
+    },
+    {
+      "index": 44,
+      "name": "Last Name of who you sold/donated/gifted to",
+      "helperText": "Use this to record the last name of the buyer or recipient"
+    },
+    {
+      "index": 45,
+      "name": "Acquisition: Purchase Price",
+      "helperText": "Amount the work was purchased for"
+    },
+    {
+      "index": 46,
+      "name": "Acquisition: Purchase Date",
+      "helperText": "Date work was purchased: mm/dd/yyyy"
+    },
+    {
+      "index": 47,
+      "name": "Acquisition: Purchase Location",
+      "helperText": "The name of the location that you purchased the work"
+    },
+    {
+      "index": 48,
+      "name": "Acquisition:  Purchase from First Name/Company Name",
+      "helperText": "The first name or company name of who you purchased from"
+    },
+    {
+      "index": 49,
+      "name": "Acquisition: Purchase From Last Name",
+      "helperText": "The last name of the person you purchased from"
+    },
+    {
+      "index": 50,
+      "name": "Acquisition: Donation Date",
+      "helperText": "Date work was donated to you: mm/dd/yyyy"
+    },
+    {
+      "index": 51,
+      "name": "Acquisition: Donation Value",
+      "helperText": "Value of donated work."
+    },
+    {
+      "index": 52,
+      "name": "Acquisition: Donor First Name/Company Name",
+      "helperText": "The first name or company name of the person who donated this to you."
+    },
+    {
+      "index": 53,
+      "name": "Acquisition: Donor Last",
+      "helperText": "Last name of the person or company who donated this to you."
+    },
+    {
+      "index": 54,
+      "name": "Attribution Line",
+      "helperText": "Place to acknowledge the donation or gift. Example: In memory of John Smith"
+    },
+    {
+      "index": 55,
+      "name": "Signed",
+      "helperText": "Mark Yes or No"
+    },
+    {
+      "index": 56,
+      "name": "Signature Notes",
+      "helperText": "Details on where the signature is located."
+    },
+    {
+      "index": 57,
+      "name": "Edition",
+      "helperText": "Mark yes if this work is part of an Edition"
+    },
+    {
+      "index": 58,
+      "name": "Edition Info",
+      "helperText": "Provide edition related details here (i.e. 1/10)"
+    },
+    {
+      "index": 59,
+      "name": "Appraisal Date",
+      "helperText": "Date of the appraisal: mm/dd/yyyy"
+    },
+    {
+      "index": 60,
+      "name": "Appraisal Value",
+      "helperText": "Price of appraisal"
+    },
+    {
+      "index": 61,
+      "name": "Appraiser First Name",
+      "helperText": "First name of appraiser goas here"
+    },
+    {
+      "index": 62,
+      "name": "Appraiser Last Name",
+      "helperText": "Last name of appraiser goes here"
+    },
+    {
+      "index": 63,
+      "name": "Condition Status",
+      "helperText": "Use one of the following:Excellent, Good, Fair, Poor, Very Poor"
+    },
+    {
+      "index": 64,
+      "name": "Condition Notes",
+      "helperText": "Detailed condition notes go here"
+    },
+    {
+      "index": 65,
+      "name": "Weight",
+      "helperText": "Weight of piece"
+    },
+    {
+      "index": 66,
+      "name": "Provenance",
+      "helperText": "The history of ownership for this work of art."
+    },
+    {
+      "index": 67,
+      "name": "Piece Image Filename or URL",
+      "helperText": "Add the FULL filename or URL path to the image file.  NOTE: You can add up to 30 additional Image filenames or URLs in this column separated by pipe character \"|\". The first image listed will be the Primary Image for your piece record."
+    },
+    {
+      "index": 68,
+      "name": "Additional File Filename or URL",
+      "helperText": "Add the FULL filename or URL path. Multiple URLs in this column should be separated by pipe character \"|\"."
+    }
+  ]
+}

@@ -80,7 +80,23 @@ When the user gives multiple instructions in one message, implement ALL of them 
 ## Key Architectural Rules
 
 - Airtable client is lazy-init (env checked at query time, not import)
-- Image URLs must use Paperform S3/CDN URLs (permanent). Never Airtable attachment thumbnails (expire).
+- **Paperform file URLs are NOT permanent.** Since Paperform's 2025 "secure file
+  access" change every URL expires 7 days after it is generated (issue #23).
+  - **Exported files** (CSV/XLSX) must carry URLs re-minted from the Paperform
+    API at export time. `lib/export/image-audit.ts` blocks the export if any URL
+    would ship stale — never weaken that gate to "get an export out".
+  - **UI preview** uses Airtable attachment thumbnails (`contactThumbnailUrl` /
+    `pieceThumbnailUrl`), which are re-signed on every API read.
+- **Never silently fall back to a stale URL.** `lib/paperform/client.ts` returns
+  an explicit outcome per image. Silent per-record fallback is what produced
+  exports where only some images had been refreshed.
+- **Paperform sanitizes filenames in URLs** (`#`, `(`, `)` are dropped) but the
+  API returns the original name, so matching uses `looseFilenameKey`.
+- **AA column headers come from AA's own .xlsx templates** in
+  `lib/export/templates/`, mirrored to JSON fixtures by
+  `scripts/extract-aa-template.py` and locked by `lib/aa-columns.test.ts`.
+  When AA sends a revised template: drop it in, re-run the extractor, run the
+  tests, and fix whatever they report. Never hand-edit the column registry.
 - Transforms are self-contained — no chaining needed
 - `title_case` is for addresses only — never artist names
 

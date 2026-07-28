@@ -1,0 +1,220 @@
+{
+  "entityType": "artist",
+  "provenance": {
+    "fileName": "ArtworkArchive-ContactsImportTemplate.xlsx",
+    "repoPath": "docs/knowledge/artwork archive formats/April 2026/ArtworkArchive-ContactsImportTemplate.xlsx",
+    "revisionLabel": "April 2026",
+    "revisedAt": "2024-09-10T18:30:42Z",
+    "createdAt": "2016-05-26T16:44:07Z",
+    "author": "John Feustel",
+    "sha256": "7858f71d05fb4d24e1fc89e75bf1828f94f4412b773325930c948a42d67006db",
+    "sizeBytes": 11044
+  },
+  "sheetName": "csvtemplate.csv",
+  "headerRow": 2,
+  "helperRow": 3,
+  "firstDataRow": 4,
+  "columnCount": 40,
+  "columns": [
+    {
+      "index": 0,
+      "name": "First Name / Company Name",
+      "helperText": "Required"
+    },
+    {
+      "index": 1,
+      "name": "Last Name",
+      "helperText": ""
+    },
+    {
+      "index": 2,
+      "name": "Title",
+      "helperText": "eg: Mrs. , Mr. , etc"
+    },
+    {
+      "index": 3,
+      "name": "Nationality",
+      "helperText": ""
+    },
+    {
+      "index": 4,
+      "name": "Birth Date",
+      "helperText": ""
+    },
+    {
+      "index": 5,
+      "name": "Death Date",
+      "helperText": ""
+    },
+    {
+      "index": 6,
+      "name": "Email",
+      "helperText": ""
+    },
+    {
+      "index": 7,
+      "name": "Secondary Email",
+      "helperText": ""
+    },
+    {
+      "index": 8,
+      "name": "Phone",
+      "helperText": ""
+    },
+    {
+      "index": 9,
+      "name": "Mobile Phone",
+      "helperText": ""
+    },
+    {
+      "index": 10,
+      "name": "Work Phone",
+      "helperText": ""
+    },
+    {
+      "index": 11,
+      "name": "Primary Address 1",
+      "helperText": "Primary"
+    },
+    {
+      "index": 12,
+      "name": "Address 2",
+      "helperText": "Primary"
+    },
+    {
+      "index": 13,
+      "name": "City",
+      "helperText": "Primary"
+    },
+    {
+      "index": 14,
+      "name": "State",
+      "helperText": "Primary"
+    },
+    {
+      "index": 15,
+      "name": "Zip",
+      "helperText": "Primary"
+    },
+    {
+      "index": 16,
+      "name": "Country",
+      "helperText": "Primary"
+    },
+    {
+      "index": 17,
+      "name": "Secondary Address 1",
+      "helperText": "Secondary"
+    },
+    {
+      "index": 18,
+      "name": "Address 2",
+      "helperText": "Secondary"
+    },
+    {
+      "index": 19,
+      "name": "City",
+      "helperText": "Secondary"
+    },
+    {
+      "index": 20,
+      "name": "State",
+      "helperText": "Secondary"
+    },
+    {
+      "index": 21,
+      "name": "Zip",
+      "helperText": "Secondary"
+    },
+    {
+      "index": 22,
+      "name": "Country",
+      "helperText": "Secondary"
+    },
+    {
+      "index": 23,
+      "name": "Notes",
+      "helperText": ""
+    },
+    {
+      "index": 24,
+      "name": "Bio",
+      "helperText": ""
+    },
+    {
+      "index": 25,
+      "name": "Website",
+      "helperText": ""
+    },
+    {
+      "index": 26,
+      "name": "Company / Organization",
+      "helperText": ""
+    },
+    {
+      "index": 27,
+      "name": "Job Title",
+      "helperText": ""
+    },
+    {
+      "index": 28,
+      "name": "Artist",
+      "helperText": "yes or no (blank)"
+    },
+    {
+      "index": 29,
+      "name": "Appraiser",
+      "helperText": "yes or no (blank)"
+    },
+    {
+      "index": 30,
+      "name": "Groups",
+      "helperText": "Comma sepearted list of groups"
+    },
+    {
+      "index": 31,
+      "name": "Spouse First Name",
+      "helperText": ""
+    },
+    {
+      "index": 32,
+      "name": "Spouse Last Name",
+      "helperText": ""
+    },
+    {
+      "index": 33,
+      "name": "Contact Tags",
+      "helperText": "Comma seperated list"
+    },
+    {
+      "index": 34,
+      "name": "Contact Image Url",
+      "helperText": ""
+    },
+    {
+      "index": 35,
+      "name": "Instagram Url",
+      "helperText": "Must be the full public URL to their profile, not just the username"
+    },
+    {
+      "index": 36,
+      "name": "Facebook Url",
+      "helperText": "Must be the full public URL to their profile, not just the username"
+    },
+    {
+      "index": 37,
+      "name": "Twitter Url",
+      "helperText": "Must be the full public URL to their profile, not just the username"
+    },
+    {
+      "index": 38,
+      "name": "LinkedIn Url",
+      "helperText": "Must be the full public URL to their profile, not just the username"
+    },
+    {
+      "index": 39,
+      "name": "Pinterest URL",
+      "helperText": "Must be the full public URL to their profile, not just the username"
+    }
+  ]
+}

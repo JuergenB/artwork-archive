@@ -303,6 +303,36 @@ export function stripMarkdown(value: string | null | undefined): string {
 
 // ─── AI Tags ────────────────────────────────────────────────
 
+// ─── AA Controlled Vocabulary ───────────────────────────────
+
+/**
+ * Snap a value onto one of AA's allowed values for a column.
+ *
+ * AA's templates declare closed vocabularies in their helper row ("USE ONE OF
+ * THE FOLLOWING: …"). Our Airtable `Type` field is free text, so values drift
+ * from AA's spelling — "FilmVideo" instead of "Film/Video" — and AA rejects or
+ * mangles them on import.
+ *
+ * Matching on alphanumerics only absorbs punctuation, spacing and case drift
+ * without a hand-maintained mapping table. A value that still doesn't match is
+ * passed through untouched so the template validator can report it rather than
+ * this function silently inventing a category.
+ */
+export function aaEnumNormalize(
+  value: string | null | undefined,
+  allowed: readonly string[],
+): string {
+  if (!value) return ""
+  const trimmed = value.trim()
+  if (!trimmed) return ""
+
+  const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "")
+  const key = squash(trimmed)
+  if (!key) return trimmed
+
+  return allowed.find((option) => squash(option) === key) ?? trimmed
+}
+
 export function aiTags(value: string | null | undefined): string {
   if (!value) return ""
   const trimmed = value.trim()
