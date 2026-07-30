@@ -57,7 +57,7 @@ Error trigger → lookup campaign admins → Gmail notification. Not yet activat
 ### Documentation & Infrastructure
 - `docs/knowledge/airtable-schema.md` — complete schema for all 5 tables with field IDs, types, relationships
 - `docs/knowledge/AA Rolling Submissions Design.md` — original system design document
-- `docs/knowledge/artwork archive formats/` — AA-Artist-Template.xlsx (40 cols), AA-Artworks-Template.xlsx (68 cols)
+- `docs/knowledge/artwork archive formats/` — AA-Artist-Template.xlsx (40 cols), AA-Artworks-Template.xlsx (68 cols) — *as of Phase A; superseded April 2026 by the 40/69-column templates, see that directory's README*
 - `.env` — Airtable PAT and Base ID for local API access
 - `.gitignore` — protects secrets
 

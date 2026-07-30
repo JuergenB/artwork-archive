@@ -15,6 +15,12 @@ filesystem. Filesystem mtimes only record when the file landed in our repo;
 `dcterms:modified` records when Artwork Archive last revised the template,
 which is the number the curator actually needs to see.
 
+WARNING: `revisionLabel` is the template's PARENT DIRECTORY NAME and `repoPath`
+is its path. Both are curator-facing — they render in the export preview and go
+into the provenance line of the email to AA. So the containing folder must stay
+named for the revision (e.g. "April 2026"); renaming it to "current" or "latest"
+degrades what the curator sees. See the README beside the templates.
+
 Usage:
   python3 scripts/extract-aa-template.py <template.xlsx> <artist|artwork> [out.json]
 

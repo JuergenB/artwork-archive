@@ -165,7 +165,10 @@ artwork-archive/
 │   ├── knowledge/
 │   │   ├── airtable-schema.md         # Complete Airtable schema
 │   │   ├── AA Rolling Submissions Design.md  # System design document
-│   │   └── artwork archive formats/   # AA import templates (.xlsx) — April 2026 + Dec 2025 (superseded)
+│   │   └── artwork archive formats/   # AA import templates — see its README
+│   │       ├── README.md              # Which template revision is live, + update procedure
+│   │       ├── April 2026/            # LIVE: the one dated folder is always the live one
+│   │       └── superseded/            # Older revisions, zipped
 │   ├── phases/
 │   │   ├── phase-a-foundation.md      # Complete
 │   │   ├── phase-b-operations-hub.md  # Complete

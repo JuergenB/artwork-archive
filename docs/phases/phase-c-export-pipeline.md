@@ -23,6 +23,12 @@ Build Stage 3 of the pipeline: take artists and artworks with status `Pending - 
 
 Two template files define the AA import format:
 
+> **Historical — describes the December 2025 templates, superseded.** AA revised
+> the pieces template mid-January 2026 (69 columns, not 68 — `Sale Location`
+> added at index 38, four columns renamed). Live contract:
+> `docs/knowledge/artwork archive formats/` (see its README). The files named
+> below are now in `superseded/December-2025.zip`.
+
 **AA-Artist-Template.xlsx** (40 columns, Row 2 = headers):
 - Contact fields: First Name, Last Name, Email, Phone, Address, City, State, Zip, Country
 - Profile: Bio/Statement (maps to Notes), Website, Social URLs

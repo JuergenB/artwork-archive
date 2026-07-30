@@ -232,4 +232,4 @@ Current implementation builds for our Airtable as the single source. The mapping
 - Export pipeline: #79
 - Capitalization detection: #57
 - Sample data: `docs/knowledge/artwork archive example data/`
-- AA templates: `docs/knowledge/artwork archive formats/April 2026/` (supersedes December 2025 version)
+- AA templates: `docs/knowledge/artwork archive formats/April 2026/` — the single dated folder at that level is always the live revision; older ones are zipped under `superseded/`. See that directory's `README.md` before changing templates.
